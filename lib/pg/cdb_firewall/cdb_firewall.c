@@ -92,6 +92,12 @@ firewall_ProcessUtility(Node *parsetree, const char *queryString,
       ereport(ERROR, (errmsg("Using SET is forbidden for non-superusers"), errhidestmt(false)));
       errdetail("Non-superusers must provide a password in the connection string.");
     }
+	else if ( nodeTag(parsetree) == T_VariableShowStmt ) {
+      ereport(LOG, (errmsg(" About to forbid statement '%s'", queryString), errhidestmt(false)));
+      ereport(ERROR, (errmsg("Using SHOW is forbidden for non-superusers"), errhidestmt(false)));
+      errdetail("Non-superusers must provide a password in the connection string.");
+    }
+
 	}
 
   if (prev_ProcessUtility)
