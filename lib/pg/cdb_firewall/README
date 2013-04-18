@@ -1,0 +1,15 @@
+A PostgreSQL library filtering queries to better control
+what can or cannot be done by a given class of users.
+
+Initial goal:
+
+ - Preventing SET
+ - Don't run queries with estimated high cost
+
+Installation
+------------
+
+  LOAD 'cdb_firewall';
+
+you can add 'cdb_firewall' shared_preload_libraries line
+in postgresql.conf.
