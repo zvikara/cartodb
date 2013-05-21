@@ -98,3 +98,5 @@ group :development, :test do
   # Server
   gem 'thin'
 end
+
+gem 'cartodb-private', :path => 'cartodb-private'

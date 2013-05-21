@@ -13,6 +13,12 @@ GIT
     mustache-trimmer (0.2.0)
       mustache (~> 0.99.4)
 
+PATH
+  remote: cartodb-private
+  specs:
+    cartodb-private (0.0.1)
+      rails (~> 3.2.2)
+
 GEM
   remote: http://rubygems.org/
   specs:
@@ -315,6 +321,7 @@ DEPENDENCIES
   bartt-ssl_requirement (~> 1.4.0)
   builder (= 3.0.0)
   capybara (= 1.1.2)
+  cartodb-private!
   chunky_png (~> 1.2.6)
   compass (~> 0.12.1)
   compass-rails (~> 1.0.1)
