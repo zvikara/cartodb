@@ -35,12 +35,6 @@ CartoDB::Application.routes.draw do
 
   end
 
-  namespace :superadmin do
-    get '/' => 'users#index', :as => :users
-    post '/' => 'users#create', :as => :users
-    resources :users, :only => [:create, :update, :destroy, :show]
-  end
-
   scope :oauth, :path => :oauth do
     match '/authorize'      => 'oauth#authorize',     :as => :authorize
     match '/request_token'  => 'oauth#request_token', :as => :request_token
@@ -127,4 +121,3 @@ CartoDB::Application.routes.draw do
     end
   end
 end
-
