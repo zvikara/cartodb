@@ -115,7 +115,7 @@
       global_info.css_included = true
     }
 
-    <% if Rails.env.development? %>
+    <% if Rails.env.development? || Cartodb.config[:no_cdn] == true %>
       opt.no_cdn = true;
     <% end %>
 
