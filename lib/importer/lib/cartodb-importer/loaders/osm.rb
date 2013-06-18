@@ -32,7 +32,7 @@ module CartoDB
     def process!
       osm2pgsql_bin_path = `which osm2pgsql`.strip
       host = db_configuration[:host] ? "-H #{db_configuration[:host]}" : ""
-      port = db_configuration[:port] ? "-P #{db_configuration[:port]}" : ""
+      port = db_configuration[:osm2pgsql_port] ? "-P #{db_configuration[:osm2pgsql_port]}" : ""
 
       # TODO Create either a dynamic cache size based on user account type
       # or pick a wiser number for everybody
@@ -47,6 +47,8 @@ module CartoDB
       stdin,  stdout, stderr = Open3.popen3(full_osm_command)
 
       wait_until_table_present("#{random_table_prefix}_line")
+
+      remove_auxiliary_tables(random_table_prefix)
 
       if $?.exitstatus != 0
         data_import.set_error_code(6000)
@@ -184,6 +186,10 @@ module CartoDB
         end
       end
       sleep 1
+    end
+
+    def remove_auxiliary_tables(table_prefix)
+      ["ways", "rels", "nodes"].each { |aux_table| db.drop_table("#{table_prefix}_#{aux_table}") }
     end
   end # OSM
 end # CartoDB

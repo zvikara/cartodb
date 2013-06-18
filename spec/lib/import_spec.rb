@@ -309,6 +309,16 @@ describe CartoDB::Importer do
         results[0].import_type.should == '.csv'
         results[0].rows_imported.should == 1904
       end
+
+      it 'imports a CSV previously exported from the SQL API' do
+        importer = create_importer 'ne_10m_populated_places_simple.csv'
+        results, errors = importer.import!
+
+        errors.should be_empty
+        results[0].name.should == 'ne_10m_populated_places_simple'
+        results[0].import_type.should == '.csv'
+        results[0].rows_imported.should > 0
+      end
     end # CSV
 
     describe "#XLSX" do
@@ -453,7 +463,6 @@ describe CartoDB::Importer do
         importer = create_importer 'map2.osm'
         results,errors = importer.import!
         errors.length.should == 0
-        debuggger
         results.should =~ [
           OpenStruct.new(name: "map2_line",    rows_imported: 17, import_type: ".osm", log: ""), 
           OpenStruct.new(name: "map2_polygon", rows_imported: 17, import_type: ".osm", log: ""),
@@ -769,6 +778,7 @@ describe CartoDB::Importer do
     @db_opts = {:database => "cartodb_importer_test",
                 :username => "postgres", :password => '',
                 :host => 'localhost',
+                :osm2pgsql_port => Cartodb.config[:importer]["osm2pgsql_port"],
                 :port => 5432}
     create_user(:username => 'test', :email => "client@example.com", :password => "clientex", :table_quota => 100, :disk_quota => 500.megabytes)
     @user = User.first
