@@ -10,6 +10,9 @@ DECLARE
   tables NAME[];
   rec RECORD;
   rec2 RECORD;
+  rec3 RECORD;
+  m TEXT;
+  backref INTEGER[];
 BEGIN
   
   tables := '{}';
@@ -31,9 +34,9 @@ BEGIN
       CONTINUE;
     END;
 
-    -- Now need to extract all values of <Relation-Name>
+    RAISE DEBUG 'Explain: %', exp;
 
-    --RAISE DEBUG 'Explain: %', exp;
+    -- Now need to extract all values of <Relation-Name>
 
     FOR rec2 IN WITH
       inp AS ( SELECT xpath('//x:Relation-Name/text()', exp, ARRAY[ARRAY['x', 'http://www.postgresql.org/2009/explain']]) as x )
@@ -41,6 +44,30 @@ BEGIN
     LOOP
       --RAISE DEBUG 'tab: %', rec2.p;
       tables := array_append(tables, rec2.p);
+    END LOOP;
+
+    -- Now need to match against QueryMetadata 
+    FOR rec2 IN
+      SELECT regexp_matches(quote_literal(rec.q), pattern, 'ig') as matches,
+             pattern as pat,
+             COALESCE(read, '') || ',' || COALESCE(write, '') as scan
+      FROM CDB_FunctionMetadata
+    LOOP
+      RAISE DEBUG 'query: %', rec.q;
+      RAISE DEBUG 'pat: %', rec2.pat;
+      RAISE DEBUG 'matches: %', rec2.matches;
+      RAISE DEBUG 'scan: %', rec2.scan;
+      FOR rec3 IN SELECT unnest(regexp_split_to_array(rec2.scan, ',')) as t LOOP
+        RAISE DEBUG 'match: %', rec3.t;
+        backref := regexp_matches(rec3.t, '^\$([0-9]+)');
+        IF backref IS NOT NULL THEN
+          m := rec2.matches[backref[1]];
+        ELSE
+          m := rec3.t;
+        END IF;
+        -- TODO: support back reference
+        tables := array_append(tables, m::name);
+      END LOOP;
     END LOOP;
 
     -- RAISE DEBUG 'Tables: %', tables;
