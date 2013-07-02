@@ -13,6 +13,18 @@ WITH n(i,p,r,w) AS ( VALUES
   NULL
 ),
 (
+  3, -- CDB_ColumnNames
+  'CDB_ColumnNames',
+  'pg_attribute',
+  NULL
+),
+(
+  4, -- CDB_ColumnType
+  'CDB_ColumnType',
+  'pg_attribute',
+  NULL
+),
+(
   1000, -- sentinel for end of system rows
   '^CUSTOM_ENTRIES_ABOVE_THIS_ID',
   '',
