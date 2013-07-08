@@ -6,7 +6,15 @@ CREATE TABLE IF NOT EXISTS
 
 -- Anyone can see this, but updates are only possible trough
 -- the security definer trigger
-GRANT SELECT ON public.CDB_TableMetadata TO public;
+REVOKE SELECT ON public.CDB_TableMetadata FROM public;
+GRANT ALL ON public.CDB_TableMetadata TO :DATABASE_USERNAME;
+
+DROP VIEW IF EXISTS public.CDB_TableMetadataView;
+CREATE VIEW public.CDB_TableMetadataView AS
+  SELECT md5(tabname::text) as md5tabname, updated_at
+  FROM public.CDB_TableMetadata;
+
+GRANT SELECT ON public.CDB_TableMetadataView TO public;
 
 --
 -- Trigger logging updated_at in the CDB_TableMetadata
