@@ -395,21 +395,20 @@ class User < Sequel::Model
   def link_ghost_tables
     link_outdated_tables
 
-    metadata_tables_ids = self.tables.select(:table_id).map(&:table_id)
+    # metadata_tables_ids = self.tables.select(:table_id).map(&:table_id)
 
-    link_created_tables(metadata_tables_ids)
-    link_renamed_tables(metadata_tables_ids)
-    link_deleted_tables(metadata_tables_ids)
+    # link_created_tables(metadata_tables_ids)
+    # link_renamed_tables(metadata_tables_ids)
+    # link_deleted_tables(metadata_tables_ids)
   end
 
   def link_outdated_tables
-    metadata_tables_without_id = self.tables.filter(:table_id => nil).map(&:name)
+    metadata_tables_without_id = self.tables.filter(table_id: nil).map(&:name)
     outdated_tables = real_tables.select{|t| metadata_tables_without_id.include?(t[:relname])}
     outdated_tables.each do |t|
-      table = Table.find(:name => t[:relname])
-      table.table_id = t[:oid]
+      table = self.tables.where(name: t[:relname]).first
       begin
-        table.save
+        table.this.update table_id: t[:oid]
       rescue Sequel::DatabaseError => e
         raise unless e.message =~ /must be owner of relation/
       end
@@ -556,18 +555,19 @@ class User < Sequel::Model
     in_database(as: :superuser) do |user_database|
       user_database.transaction do
         if files.empty?
-          glob = Rails.root.join('lib/sql/*.sql')
+          glob = Rails.root.join('lib/sql/scripts-enabled/*.sql')
           sql_files = Dir.glob(glob).sort
         else
-          sql_files = files.map {|sql| Rails.root.join('lib/sql', sql).to_s}.sort
+          sql_files = files.map {|sql| Rails.root.join('lib/sql/scripts-enabled', sql).to_s}.sort
         end
         sql_files.each do |f|
           if File.exists?(f)
             CartoDB::Logger.info "Loading CartoDB SQL function #{File.basename(f)} into #{database_name}"
             @sql = File.new(f).read
+            @sql.gsub!(':DATABASE_USERNAME', self.database_username)
             user_database.run(@sql)
           else
-            CartoDB::Logger.info "SQL function #{File.basename(f)} doesn't exist in lib/sql directory. Not loading it."
+            CartoDB::Logger.info "SQL function #{File.basename(f)} doesn't exist in lib/sql/scripts-enabled directory. Not loading it."
           end
         end
       end
