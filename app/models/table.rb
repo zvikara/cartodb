@@ -330,6 +330,31 @@ class Table < Sequel::Model(:user_tables)
     self.handle_creation_error(e)
   end
 
+  def before_save
+    super
+    if @name_changed_from.present? && @name_changed_from != name && !@renamed
+      rename(@name_changed_from, name)
+    end
+  end #before_save
+
+  def rename(name, new_name)
+    @renamed = true
+    puts "name: #{name}"
+    puts "new_name: #{new_name}"
+    if name.present? && new_name.present? && new_name != name
+      owner.in_database.rename_table(name, new_name)
+    end
+  end
+
+  def save(*args)
+    super(*args)
+  rescue => exception
+    if exception.message =~ /type/
+      owner.in_database.rename_table(name, @name_changed_from)
+    end
+    raise
+  end #save
+
   def after_save
     super
     manage_tags
@@ -1548,9 +1573,8 @@ SQL
   def update_name_changes
     if @name_changed_from.present? && @name_changed_from != name
       # update metadata records
-      reload
       $tables_metadata.rename(Table.key(database_name,@name_changed_from), key)
-      owner.in_database.rename_table(@name_changed_from, name)
+      #owner.in_database.rename_table(@name_changed_from, name)
       propagate_name_change_to_table_visualization
 
       CartoDB::notify_exception(

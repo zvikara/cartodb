@@ -44,10 +44,10 @@ module CartoDB
       def store
         raise CartoDB::InvalidMember unless self.valid?
 
+        propagate_privacy_and_name_to(table) if table
         invalidate_varnish_cache if name_changed || privacy_changed || description_changed
         set_timestamps
         repository.store(id, attributes.to_hash)
-        propagate_privacy_and_name_to(table) if table
         self
       end #store
 
@@ -172,8 +172,10 @@ module CartoDB
       end #propagate_privacy_to
 
       def propagate_name_to(table)
+        old_name    = table.name
         table.name = self.name
-        table.update(name: self.name)
+        table.rename(old_name, self.name)
+        #table.update(name: self.name)
         table.send(:update_name_changes)
         self
       end #propagate_name_to
