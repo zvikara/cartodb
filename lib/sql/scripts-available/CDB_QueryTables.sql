@@ -59,6 +59,9 @@ BEGIN
       RAISE DEBUG 'scan: %', rec2.scan;
       FOR rec3 IN SELECT unnest(regexp_split_to_array(rec2.scan, ',')) as t LOOP
         RAISE DEBUG 'match: %', rec3.t;
+        IF NULLIF(rec3.t,'') IS NULL THEN
+          CONTINUE;
+        END IF;
         backref := regexp_matches(rec3.t, '^\$([0-9]+)');
         IF backref IS NOT NULL THEN
           m := rec2.matches[backref[1]];

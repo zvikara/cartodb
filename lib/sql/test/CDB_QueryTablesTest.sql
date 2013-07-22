@@ -25,3 +25,7 @@ WITH inp AS ( select 'create table test (a int); insert into test values (1); se
 
 WITH inp AS ( select 'WITH a AS (select * from pg_class) select * from a'::text as q )
  SELECT q, CDB_QueryTables(q) from inp;
+
+WITH inp AS ( select 'select CDB_UsertaBles()'::text as q )
+ SELECT q, CDB_QueryTables(q) from inp;
+
