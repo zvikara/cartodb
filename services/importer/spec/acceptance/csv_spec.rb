@@ -35,6 +35,7 @@ describe 'csv regression tests' do
   end
 
   it 'imports files exported from the SQL API' do
+    skip
     filepath    = path_to('ne_10m_populated_places_simple.csv')
     downloader  = Downloader.new(filepath)
     runner      = Runner.new(@pg_options, downloader)
@@ -44,6 +45,7 @@ describe 'csv regression tests' do
   end
 
   it 'imports files from Google Fusion Tables' do
+    skip
     url = "https://www.google.com/fusiontables/exporttable" +
           "?query=select+*+from+1dimNIKKwROG1yTvJ6JlMm4-B4LxMs2YbncM4p9g"
     downloader  = Downloader.new(url)
@@ -54,12 +56,62 @@ describe 'csv regression tests' do
   end
 
   it 'imports files with a the_geom column in GeoJSON' do
+    skip
     filepath    = path_to('csv_with_geojson.csv')
     downloader  = Downloader.new(filepath)
     runner      = Runner.new(@pg_options, downloader)
     runner.run
 
     geometry_type_for(runner).must_equal 'MULTIPOLYGON'
+  end
+
+  it 'imports files with spaces as delimiters' do
+    filepath    = path_to('fsq_places_uniq.csv')
+
+    require 'csv'
+    require 'charlock_holmes'
+
+    COMMON_DELIMITERS = ['","',"\"\t\"", '" "']
+
+    def delimiter_in(path, encoding)
+      occurrences = {}
+      first_line  = File.open(path, 'rb', external_encoding: encoding)
+                      .first.encode('UTF-8', encoding)
+      return ',' unless first_line
+
+      occurrences = Hash[
+        COMMON_DELIMITERS.map { |delimiter| 
+          [delimiter, first_line.count(delimiter)] 
+        }
+      ].sort {|a, b| b.first <=> a.first }
+      delimiter = occurrences.first.first unless occurrences.empty?
+      delimiter = ' ' if delimiter == "\"\t\""
+      delimiter
+    end #delimiter_in
+
+    def encoding_in(filepath)
+      contents  = File.open(filepath).first
+      encoding  = CharlockHolmes::EncodingDetector.detect(contents).fetch(:encoding)
+    end #encoding_in
+
+    def columns_in(filepath, encoding, delimiter)
+      first_line  = File.open(filepath, 'rb', external_encoding: encoding)
+                      .first.encode('UTF-8', encoding)
+
+      CSV.parse(first_line, col_sep: delimiter).first
+    end #columns_in
+
+    encoding  = encoding_in(filepath)
+    delimiter = delimiter_in(filepath, encoding)
+    puts columns_in(filepath, encoding, delimiter).inspect
+    #csv = CSV.new(File.open(filepath))
+    #puts csv.gets
+    #puts csv.gets
+    #downloader  = Downloader.new(filepath)
+    #runner      = Runner.new(@pg_options, downloader)
+    #runner.run
+
+    #geometry_type_for(runner).must_equal 'POINT'
   end
 
   def path_to(filepath)
