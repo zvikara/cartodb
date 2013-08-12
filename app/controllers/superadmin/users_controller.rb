@@ -1,8 +1,13 @@
 class Superadmin::UsersController < Superadmin::SuperadminController
   respond_to :json
 
-  ssl_required :create, :update, :destroy, :show if Rails.env.production? || Rails.env.staging?
+  ssl_required :create, :update, :destroy, :show, :index if Rails.env.production? || Rails.env.staging?
   before_filter :get_user, :only => [:update, :destroy, :show]
+
+  def index
+    @users = (params[:overquota].present? ? User.overquota : User.all)
+    respond_with(:superadmin, @users)
+  end
 
   def create
     # BEWARE. don't get clever. This is all explicit because of mass assignment limitations
@@ -23,6 +28,7 @@ class Superadmin::UsersController < Superadmin::SuperadminController
       @user.max_layers              = attributes[:max_layers]               if attributes.has_key?(:max_layers)
       @user.user_timeout            = attributes[:user_timeout]             if attributes.has_key?(:user_timeout)
       @user.database_timeout        = attributes[:database_timeout]         if attributes.has_key?(:database_timeout)
+      @user.upgraded_at             = attributes[:upgraded_at]              if attributes.has_key?(:upgraded_at)
 
       if attributes[:password].present?
         @user.password              = attributes[:password]
@@ -54,6 +60,7 @@ class Superadmin::UsersController < Superadmin::SuperadminController
       @user.max_layers              = attributes[:max_layers]               if attributes.has_key?(:max_layers)
       @user.user_timeout            = attributes[:user_timeout]             if attributes.has_key?(:user_timeout)
       @user.database_timeout        = attributes[:database_timeout]         if attributes.has_key?(:database_timeout)
+      @user.upgraded_at             = attributes[:upgraded_at]              if attributes.has_key?(:upgraded_at)
 
       if attributes[:password].present?
         @user.password = attributes[:password]

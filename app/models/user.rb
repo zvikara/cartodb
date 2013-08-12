@@ -69,7 +69,7 @@ class User < Sequel::Model
 
   def after_save
     super
-    changes = self.previous_changes.keys
+    changes = (self.previous_changes.present? ? self.previous_changes.keys : [])
     set_statement_timeouts if changes.include?(:user_timeout) || changes.include?(:database_timeout)
   end
 
@@ -111,6 +111,16 @@ class User < Sequel::Model
   # allow extra vars for auth
   attr_reader :password
   attr_accessor :password_confirmation
+
+  ##
+  # SLOW! Checks map views for every user
+  #
+  def self.overquota
+    User.all.select do |u|
+        u.set_old_api_calls # updates map views stats older than 3 hours
+        u.get_api_calls(from: u.last_billing_cycle, to: Date.today).sum > u.map_view_quota.to_i
+    end
+  end
 
   def self.password_digest(password, salt)
     digest = AUTH_DIGEST
