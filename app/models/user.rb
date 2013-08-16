@@ -555,7 +555,7 @@ class User < Sequel::Model
     self.in_database(:as => :superuser).run(<<-TRIGGER
       CREATE OR REPLACE FUNCTION public._CDB_UserQuotaInBytes() RETURNS int AS $$
         SELECT #{self.quota_in_bytes}::int
-      $$ LANGUAGE 'sql';
+      $$ LANGUAGE 'sql' IMMUTABLE;
     TRIGGER
     )
     #load_cartodb_functions
