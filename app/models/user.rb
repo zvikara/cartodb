@@ -551,11 +551,16 @@ class User < Sequel::Model
   end
 
   def rebuild_quota_trigger
-    load_cartodb_functions
     puts "Rebuilding quota trigger in db '#{database_name}' (#{username})"
+    self.in_database(:as => :superuser).run(<<-TRIGGER
+      CREATE OR REPLACE FUNCTION public._CDB_UserQuotaInBytes() RETURNS int AS $$
+        SELECT #{self.quota_in_bytes}::int
+      $$ LANGUAGE 'sql';
+    TRIGGER
+    )
+    #load_cartodb_functions
     tables.all.each do |table|
       begin
-        table.add_python
         table.set_trigger_check_quota
       rescue Sequel::DatabaseError => e
         next if e.message =~ /.*does not exist\s*/

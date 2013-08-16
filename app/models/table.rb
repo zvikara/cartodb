@@ -1219,24 +1219,19 @@ class Table < Sequel::Model(:user_tables)
   end
 
   def set_trigger_the_geom_webmercator
-    return true unless self.schema(:reload => true).flatten.include?(THE_GEOM)
-    owner.in_database(:as => :superuser) do |user_database|
-      user_database.run(<<-TRIGGER
-        -- this would really belong in a migration
-        DROP TRIGGER IF EXISTS update_the_geom_webmercator_trigger ON "#{self.name}";
-        SELECT CDB_CartodbfyTable(#{self.name});
-  TRIGGER
-        )
-    end
+    self.cartodbfy
+    # this would really belong in a migration
+    owner.in_database(:as => :superuser).run('
+      DROP TRIGGER IF EXISTS update_the_geom_webmercator_trigger ON "#{self.name}";
+    ')
   end
 
   def set_trigger_update_updated_at
-    owner.in_database(:as => :superuser).run(<<-TRIGGER
-      -- this would really belong in a migration
+    self.cartodbfy
+    # this would really belong in a migration
+    owner.in_database(:as => :superuser).run('
       DROP TRIGGER IF EXISTS update_updated_at_trigger ON "#{self.name}";
-      SELECT CDB_CartodbfyTable(#{self.name});
-TRIGGER
-    )
+    ')
   end
 
   # move to C
@@ -1304,22 +1299,13 @@ TRIGGER
     owner.in_database[%Q{ANALYZE "#{self.name}";}]
   end
 
+  def cartodbfy
+    owner.in_database(:as => :superuser).run("SELECT CDB_CartodbfyTable('#{self.name}')")
+  end
+
   # Set quota checking trigger for this table
   def set_trigger_check_quota
-    # probability factor of running the check for each row
-    # (it'll always run before each statement)
-    check_probability_factor = 0.001 # TODO: base on database usage ?
-    owner.in_database(:as => :superuser).run(<<-TRIGGER
-    DROP TRIGGER IF EXISTS test_quota ON "#{self.name}";
-    CREATE TRIGGER test_quota BEFORE UPDATE OR INSERT ON "#{self.name}"
-      EXECUTE PROCEDURE CDB_CheckQuota(1, #{self.owner.quota_in_bytes});
-    DROP TRIGGER IF EXISTS test_quota_per_row ON "#{self.name}";
-    CREATE TRIGGER test_quota_per_row BEFORE UPDATE OR INSERT ON "#{self.name}"
-      FOR EACH ROW
-      EXECUTE PROCEDURE CDB_CheckQuota( #{check_probability_factor},
-                                        #{self.owner.quota_in_bytes} );
-  TRIGGER
-  )
+    self.cartodbfy
   end
 
   def owner

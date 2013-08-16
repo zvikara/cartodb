@@ -33,6 +33,7 @@ DECLARE
   had_column BOOLEAN;
   i INTEGER;
   new_name TEXT;
+  quota_in_bytes INT;
 BEGIN
 
   -- Ensure required fields exist
@@ -292,24 +293,23 @@ BEGIN
 
   -- "test_quota" and "test_quota_per_row"
 
-  -- TODO: find quota in bytes for the owner (needs another function!)
-  -- TODO: find check_probability_factor (needs another function!)
+  SELECT public._CDB_UserQuotaInBytes() INTO quota_in_bytes;
 
---  sql := 'DROP TRIGGER IF EXISTS test_quota ON ' || reloid::text;
---  EXECUTE sql;
---  sql := 'CREATE TRIGGER test_quota BEFORE UPDATE OR INSERT ON '
---      || reloid::text
---      || ' EXECUTE PROCEDURE public.CDB_CheckQuota(1, '
---      || quota_in_bytes || ')';
---  EXECUTE sql;
+  sql := 'DROP TRIGGER IF EXISTS test_quota ON ' || reloid::text;
+  EXECUTE sql;
+  sql := 'CREATE TRIGGER test_quota BEFORE UPDATE OR INSERT ON '
+      || reloid::text
+      || ' EXECUTE PROCEDURE public.CDB_CheckQuota(1, '
+      || quota_in_bytes || ')';
+  EXECUTE sql;
 
---    sql := 'DROP TRIGGER IF EXISTS test_quota_per_row ON ' || reloid::text;
---    EXECUTE sql;
---    sql := 'CREATE TRIGGER test_quota_per_row BEFORE UPDATE OR INSERT ON '
---      || reloid::text
---      || ' FOR EACH ROW EXECUTE PROCEDURE public.CDB_CheckQuota('
---      || check_probability_factor || ',' || quota_in_bytes || ')';
---  EXECUTE sql;
+  sql := 'DROP TRIGGER IF EXISTS test_quota_per_row ON ' || reloid::text;
+  EXECUTE sql;
+  sql := 'CREATE TRIGGER test_quota_per_row BEFORE UPDATE OR INSERT ON '
+      || reloid::text
+      || ' FOR EACH ROW EXECUTE PROCEDURE public.CDB_CheckQuota(0.001,'
+      || quota_in_bytes || ')';
+  EXECUTE sql;
  
 
 END;
