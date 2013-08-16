@@ -1222,19 +1222,9 @@ class Table < Sequel::Model(:user_tables)
     return true unless self.schema(:reload => true).flatten.include?(THE_GEOM)
     owner.in_database(:as => :superuser) do |user_database|
       user_database.run(<<-TRIGGER
+        -- this would really belong in a migration
         DROP TRIGGER IF EXISTS update_the_geom_webmercator_trigger ON "#{self.name}";
-        CREATE OR REPLACE FUNCTION update_the_geom_webmercator() RETURNS trigger AS $update_the_geom_webmercator_trigger$
-          BEGIN
-                NEW.#{THE_GEOM_WEBMERCATOR} := CDB_TransformToWebmercator(NEW.the_geom);
-                RETURN NEW;
-          END;
-        $update_the_geom_webmercator_trigger$ LANGUAGE plpgsql VOLATILE COST 100;
-
-        #{create_the_geom_if_not_exists(self.name)}
-
-        CREATE TRIGGER update_the_geom_webmercator_trigger
-        BEFORE INSERT OR UPDATE OF the_geom ON "#{self.name}"
-           FOR EACH ROW EXECUTE PROCEDURE update_the_geom_webmercator();
+        SELECT CDB_CartodbfyTable(#{self.name});
   TRIGGER
         )
     end
@@ -1242,18 +1232,9 @@ class Table < Sequel::Model(:user_tables)
 
   def set_trigger_update_updated_at
     owner.in_database(:as => :superuser).run(<<-TRIGGER
+      -- this would really belong in a migration
       DROP TRIGGER IF EXISTS update_updated_at_trigger ON "#{self.name}";
-
-      CREATE OR REPLACE FUNCTION update_updated_at() RETURNS TRIGGER AS $update_updated_at_trigger$
-        BEGIN
-               NEW.updated_at := now();
-               RETURN NEW;
-        END;
-      $update_updated_at_trigger$ LANGUAGE plpgsql;
-
-      CREATE TRIGGER update_updated_at_trigger
-      BEFORE UPDATE ON "#{self.name}"
-        FOR EACH ROW EXECUTE PROCEDURE update_updated_at();
+      SELECT CDB_CartodbfyTable(#{self.name});
 TRIGGER
     )
   end

@@ -1,3 +1,24 @@
+-- Depends on:
+--   CDB_TransformToWebmercator.sql
+--   CDB_TableMetadata.sql
+--   CDB_Quota.sql
+
+-- Update the_geom_webmercator
+CREATE OR REPLACE FUNCTION _CDB_update_the_geom_webmercator()
+RETURNS trigger AS $$
+BEGIN
+  NEW.the_geom_webmercator := CDB_TransformToWebmercator(NEW.the_geom);
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION _CDB_update_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+   NEW.updated_at := now();
+   RETURN NEW;
+END;
+$$ LANGUAGE plpgsql VOLATILE;
 
 -- Ensure a table is a "cartodb" table
 -- See https://github.com/CartoDB/cartodb/wiki/CartoDB-user-table
@@ -241,7 +262,7 @@ BEGIN
 
   -- Drop and re-create all triggers
 
-  -- TODO: find way to avoid drop/recreate ?
+  -- NOTE: drop/create has the side-effect of re-enabling disabled triggers
 
   -- "track_updates"
   sql := 'DROP TRIGGER IF EXISTS track_updates ON ' || reloid::text;
@@ -252,26 +273,22 @@ BEGIN
   EXECUTE sql;
 
   -- "update_the_geom_webmercator"
-  -- Disabled due to unavailability of "update_the_geom_webmercator" function
-  -- See https://github.com/CartoDB/cartodb/issues/199
   -- TODO: why _before_ and not after ?
---  sql := 'DROP TRIGGER IF EXISTS update_the_geom_webmercator_trigger ON ' || reloid::text;
---  EXECUTE sql;
---  sql := 'CREATE trigger update_the_geom_webmercator_trigger BEFORE INSERT OR UPDATE ON '
---      || reloid::text
---      || ' FOR EACH ROW EXECUTE PROCEDURE public.update_the_geom_webmercator()';
---  EXECUTE sql;
+  sql := 'DROP TRIGGER IF EXISTS update_the_geom_webmercator_trigger ON ' || reloid::text;
+  EXECUTE sql;
+  sql := 'CREATE trigger update_the_geom_webmercator_trigger BEFORE INSERT OR UPDATE ON '
+      || reloid::text
+      || ' FOR EACH ROW EXECUTE PROCEDURE public._CDB_update_the_geom_webmercator()';
+  EXECUTE sql;
 
   -- "update_updated_at"
-  -- Disabled due to unavailability of "update_the_geom_webmercator" function
-  -- See https://github.com/CartoDB/cartodb/issues/199
   -- TODO: why _before_ and not after ?
---  sql := 'DROP TRIGGER IF EXISTS update_updated_at_trigger ON ' || reloid::text;
---  EXECUTE sql;
---  sql := 'CREATE trigger update_updated_at_trigger BEFORE UPDATE '
---      || reloid::text
---      || ' FOR EACH ROW EXECUTE PROCEDURE public.update_updated_at()';
---  EXECUTE sql;
+  sql := 'DROP TRIGGER IF EXISTS update_updated_at_trigger ON ' || reloid::text;
+  EXECUTE sql;
+  sql := 'CREATE trigger update_updated_at_trigger BEFORE UPDATE ON '
+      || reloid::text
+      || ' FOR EACH ROW EXECUTE PROCEDURE public._CDB_update_updated_at()';
+  EXECUTE sql;
 
   -- "test_quota" and "test_quota_per_row"
 
