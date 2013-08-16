@@ -36,7 +36,7 @@ DECLARE
   had_column BOOLEAN;
   i INTEGER;
   new_name TEXT;
-  quota_in_bytes INT;
+  quota_in_bytes INT8;
 BEGIN
 
   -- Ensure required fields exist

@@ -553,8 +553,9 @@ class User < Sequel::Model
   def rebuild_quota_trigger
     puts "Rebuilding quota trigger in db '#{database_name}' (#{username})"
     self.in_database(:as => :superuser).run(<<-TRIGGER
-      CREATE OR REPLACE FUNCTION public._CDB_UserQuotaInBytes() RETURNS int AS $$
-        SELECT #{self.quota_in_bytes}::int
+      DROP FUNCTION IF EXISTS public._CDB_UserQuotaInBytes();
+      CREATE OR REPLACE FUNCTION public._CDB_UserQuotaInBytes() RETURNS int8 AS $$
+        SELECT #{self.quota_in_bytes}::int8
       $$ LANGUAGE 'sql' IMMUTABLE;
     TRIGGER
     )
