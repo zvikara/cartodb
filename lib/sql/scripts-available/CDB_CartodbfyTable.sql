@@ -1,7 +1,10 @@
 -- Depends on:
---   CDB_TransformToWebmercator.sql
---   CDB_TableMetadata.sql
---   CDB_Quota.sql
+--   * CDB_TransformToWebmercator.sql
+--   * CDB_TableMetadata.sql
+--   * CDB_Quota.sql
+--   * _CDB_UserQuotaInBytes() function, installed by rails
+--     (user.rebuild_quota_trigger, called by rake task
+--      cartodb:db:update_test_quota_trigger)
 
 -- Update the_geom_webmercator
 CREATE OR REPLACE FUNCTION _CDB_update_the_geom_webmercator()
