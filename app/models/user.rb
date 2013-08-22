@@ -65,6 +65,8 @@ class User < Sequel::Model
     setup_user
     save_metadata
     monitor_user_notification
+    sleep 3
+    set_statement_timeouts
   end
 
   def after_save
@@ -288,6 +290,14 @@ class User < Sequel::Model
         tables = user_database[query].all.map { |i| i[:table_name] }
         return tables
       end
+    end
+  end
+
+  def trial_ends_at
+    if upgraded_at && upgraded_at + 15.days > Date.today
+      upgraded_at + 15.days
+    else
+      nil
     end
   end
 
@@ -624,7 +634,6 @@ class User < Sequel::Model
       set_database_permissions
       set_database_permissions_in_importer_schema
       load_cartodb_functions
-      set_statement_timeouts
     end
   end
 
