@@ -37,6 +37,10 @@ class Table < Sequel::Model(:user_tables)
 
   def_delegators :relator, *CartoDB::Table::Relator::INTERFACE
 
+  attr_accessor :force_schema, :the_geom_type, :new_table,
+                :keep_user_database_table, :migrate_existing_table
+  
+
   def public_values(options = {})
     selected_attrs = if options[:except].present?
       PUBLIC_ATTRIBUTES.select { |k, v| !options[:except].include?(k.to_sym) }
@@ -77,17 +81,10 @@ class Table < Sequel::Model(:user_tables)
 
   # Ignore mass-asigment on not allowed columns
   self.strict_param_setting = false
-
   # Allowed columns
   set_allowed_columns(:privacy, :tags, :description)
 
-  attr_accessor :force_schema, :import_from_file,:import_from_url, :import_from_query,
-                :import_from_table_copy, :importing_encoding,
-                :temporal_the_geom_type, :migrate_existing_table, :new_table, :keep_user_database_table
 
-  ## Callbacks
-
-  # Core validation method that is automatically called before create and save
   def validate
     super
 
@@ -122,274 +119,37 @@ class Table < Sequel::Model(:user_tables)
     end
   end
 
-  # runs before each validation phase on create and update
   def before_validation
-    # ensure privacy variable is set to one of the constants. this is bad.
     self.privacy ||= owner.private_tables_enabled ? PRIVATE : PUBLIC
     super
-  end
-
-  def append_from_importer(new_table_name, new_schema_name)
-    new_schema            = owner.in_database.schema(
-                              new_table_name,
-                              reload: true,
-                              schema: new_schema_name
-                            )
-    new_schema_hash       = Hash[new_schema]
-    self.database_name    = owner.database_name
-    append_to_table       = self
-    new_schema_names      = new_schema.map(&:first)
-    existing_schema_hash  = Hash[append_to_table.schema(reload: true)]
-    drop_names    = %W{ cartodb_id created_at updated_at ogc_fid}
-    configuration = ::Rails::Sequel.configuration.environment_for(Rails.env)
-
-    # fun schema check here
-    new_schema_hash.keys.each do |column_name|
-      if (RESERVED_COLUMN_NAMES.include?(column_name.to_s) ||
-      drop_names.include?(column_name.to_s))
-        new_schema_names.delete(column_name)
-      elsif column_name.to_s != 'the_geom'
-        if existing_schema_hash.keys.include?(column_name)
-          # column name exists in new and old table
-          if existing_schema_hash[column_name] != new_schema_hash[column_name]
-            #the new column type does not match the existing, force change to existing
-            column_data = configuration.merge(
-              type: existing_schema_hash[column_name][:type].to_s,
-              name: column_name
-            ).symbolize_keys
-            self.modify_column!(column_data)
-          end
-        else
-          # add column and type to old table
-          column_data =  configuration.merge(
-            type: new_schema_hash[column_name][:type].to_s,
-            name: column_name
-          ).symbolize_keys
-          append_to_table.add_column!(column_data)
-        end
-      end
-    end
-
-    # append table 2 to table 1
-    owner.in_database.run(%Q{
-      INSERT INTO "#{append_to_table.name}" (
-        #{new_schema_names.join(',')}
-      )
-      ( 
-        SELECT #{new_schema_names.join(',')}
-        FROM "#{new_schema_name}"."#{new_table_name}"
-      )
-    })
-  end #append_from_importer
-
-  def append_to_table(options)
-    from_table = options[:from_table]
-    self.database_name = owner.database_name
-    append_to_table = self
-    # if concatenate_to_table is set, it will join the table just created
-    # to the table named in concatenate_to_table and then drop the created table
-    #get schemas of uploaded and existing tables
-    new_schema = from_table.schema(:reload => true)
-    new_schema_hash = Hash[new_schema]
-    new_schema_names = new_schema.collect {|x| x[0]}
-
-    existing_schema_hash = Hash[append_to_table.schema(:reload => true)]
-
-    # fun schema check here
-    drop_names = %W{ cartodb_id created_at updated_at ogc_fid}
-    new_schema_hash.keys.each do |column_name|
-      if RESERVED_COLUMN_NAMES.include?(column_name.to_s) or drop_names.include?column_name.to_s
-        new_schema_names.delete(column_name)
-      elsif column_name.to_s != 'the_geom'
-        if existing_schema_hash.keys.include?(column_name)
-          # column name exists in new and old table
-          if existing_schema_hash[column_name] != new_schema_hash[column_name]
-            #the new column type does not match the existing, force change to existing
-            hash_in = ::Rails::Sequel.configuration.environment_for(Rails.env).merge(
-              :type => existing_schema_hash[column_name],
-              :name => column_name
-            ).symbolize_keys
-            self.modify_column! hash_in
-          end
-        else
-          # add column and type to old table
-            hash_in = ::Rails::Sequel.configuration.environment_for(Rails.env).merge(
-              :type => new_schema_hash[column_name],
-              :name => column_name
-            ).symbolize_keys
-          append_to_table.add_column! hash_in
-        end
-      end
-    end
-    # append table 2 to table 1
-    owner.in_database.run(%Q{INSERT INTO "#{append_to_table.name}" (#{new_schema_names.join(',')}) (SELECT #{new_schema_names.join(',')} FROM "#{from_table.name}")})
-    # so that we can use the same method to allow the user to merge two tables
-    # that already exist in the API
-    # a future might be merge_two_tables
-    # => where tableA is duplicated
-    # => then tableB is append_to_table onto tableA
-    # => leaving both in tact while creating a new tthat contains both
-  end
-
-  def import_to_cartodb
-    if migrate_existing_table.present?
-      @data_import.data_type = 'external_table'
-      @data_import.data_source = migrate_existing_table
-      #@data_import.migrate
-      @data_import.save
-
-      # ensure unique name, also ensures self.name can override any imported table name
-      uniname = self.name ? get_valid_name(self.name) : get_valid_name(migrate_existing_table)
-
-      # with table #{uniname} table created now run migrator to CartoDBify
-      hash_in = ::Rails::Sequel.configuration.environment_for(Rails.env).merge(
-        "database" => database_name,
-        :logger => ::Rails.logger,
-        "username" => owner.database_username,
-        "password" => owner.database_password,
-        :current_name => migrate_existing_table,
-        :suggested_name => uniname,
-        :debug => (Rails.env.development?),
-        :remaining_quota => owner.remaining_quota,
-        :remaining_tables => owner.remaining_table_quota,
-        :data_import_id => @data_import.id
-      ).symbolize_keys
-      importer = CartoDB::Migrator.new hash_in
-      importer = importer.migrate!
-      @data_import.reload
-      #@data_import.migrated
-      @data_import.save
-      return importer.name
-    end
-  end
-
-  def import_cleanup
-    owner.in_database do |user_database|
-      # If we already have a cartodb_id column let's rename it to an auxiliary column
-      aux_cartodb_id_column = nil
-      if schema.present? && schema.flatten.include?(:cartodb_id)
-         @data_import.log_update('Renaming cartodb_id from import file')
-         aux_cartodb_id_column = "cartodb_id_aux_#{Time.now.to_i}"
-         user_database.run(%Q{ALTER TABLE "#{self.name}" RENAME COLUMN cartodb_id TO #{aux_cartodb_id_column}})
-         self.schema
-      end
-
-      # When tables are created using ogr2ogr they are added a ogc_fid primary key
-      # In that case:
-      #  - If cartodb_id already exists, remove ogc_fid
-      #  - If cartodb_id does not exist, remove the primary key constraint and treat ogc_fid as the auxiliary column
-      if schema.present? && schema.flatten.include?(:ogc_fid)
-        if aux_cartodb_id_column.nil?
-          aux_cartodb_id_column = "ogc_fid"
-        else
-          @data_import.log_update('Removing ogc_fid from import file')
-          user_database.run(%Q{ALTER TABLE "#{self.name}" DROP COLUMN ogc_fid})
-        end
-      end
-      if schema.present? && schema.flatten.include?(:gid)
-        if aux_cartodb_id_column.nil?
-          aux_cartodb_id_column = "gid"
-        else
-          @data_import.log_update('Removing gid from import file')
-          user_database.run(%Q{ALTER TABLE "#{self.name}" DROP COLUMN gid})
-        end
-      end
-      self.schema(:reload => true, :cartodb_types => false).each do |column|
-        if column[1] =~ /^character varying/
-          user_database.run(%Q{ALTER TABLE "#{self.name}" ALTER COLUMN \"#{column[0]}\" TYPE text})
-        end
-      end
-      schema = self.schema(:reload => true)
-
-      user_database.run(%Q{ALTER TABLE "#{self.name}" ADD COLUMN cartodb_id SERIAL})
-
-      # If there's an auxiliary column, copy and restart the sequence to the max(cartodb_id)+1
-      # Do this before adding constraints cause otherwise we can have duplicate key errors
-      if aux_cartodb_id_column.present?
-        @data_import.log_update('Cleaning supplied cartodb_id')
-        user_database.run(%Q{UPDATE "#{self.name}" SET cartodb_id = CAST(#{aux_cartodb_id_column} AS INTEGER)})
-        user_database.run(%Q{ALTER TABLE "#{self.name}" DROP COLUMN #{aux_cartodb_id_column}})
-        cartodb_id_sequence_name = user_database["SELECT pg_get_serial_sequence('#{self.name}', 'cartodb_id')"].first[:pg_get_serial_sequence]
-        max_cartodb_id = user_database[%Q{SELECT max(cartodb_id) FROM "#{self.name}"}].first[:max]
-
-        # only reset the sequence on real imports.
-        # skip for duplicate tables as they have totaly new names, but have aux_cartodb_id columns
-        if max_cartodb_id
-          user_database.run("ALTER SEQUENCE #{cartodb_id_sequence_name} RESTART WITH #{max_cartodb_id+1}")
-        end
-      end
-
-      # Try to use the selected cartodb_id column as primary key,
-      # generate a new one if we can't (duplicated values for instance)
-      begin
-        user_database.run(%Q{ALTER TABLE "#{self.name}" ADD PRIMARY KEY (cartodb_id)})
-      rescue
-        @data_import.log_update("Renaming cartodb_id to invalid_cartodb_id") if @data_import
-        user_database.run(%Q{ALTER TABLE "#{self.name}" ALTER COLUMN cartodb_id DROP DEFAULT})
-        user_database.run(%Q{ALTER TABLE "#{self.name}" ALTER COLUMN cartodb_id DROP NOT NULL})
-        user_database.run(%Q{DROP SEQUENCE IF EXISTS #{self.name}_cartodb_id_seq})
-        user_database.run(%Q{ALTER TABLE "#{self.name}" RENAME COLUMN cartodb_id TO invalid_cartodb_id})
-        user_database.run(%Q{ALTER TABLE "#{self.name}" ADD COLUMN cartodb_id SERIAL})
-        user_database.run(%Q{ALTER TABLE "#{self.name}" ADD PRIMARY KEY (cartodb_id)})
-      end
-
-      normalize_timestamp(user_database, :created_at)
-      normalize_timestamp(user_database, :updated_at)
-    end
   end
 
   def before_create
     raise CartoDB::QuotaExceeded if owner.over_table_quota?
     super
+
     update_updated_at
     self.database_name = owner.database_name
-
-    # The Table model only migrates now, never imports
-    if migrate_existing_table.present?
-      #init state machine
-      if self.data_import_id.nil? #needed for non ui-created tables
-        @data_import  = DataImport.new(:user_id => self.user_id)
-        @data_import.updated_at = Time.now
-        @data_import.save
-      else
-        @data_import  = DataImport.find(:id=>self.data_import_id)
-      end
-
-      importer_result_name = import_to_cartodb
-
-      @data_import.reload
-      @data_import.table_name = importer_result_name
-      @data_import.save
-
-      self[:name] = importer_result_name
-
-      schema = self.schema(:reload => true)
-
-      import_cleanup
-      set_the_geom_column!
-      set_table_id
-      #@data_import.formatted
-      @data_import.save
-    else
-      create_table_in_database!
-      set_table_id
-      if !self.temporal_the_geom_type.blank?
-        self.the_geom_type = self.temporal_the_geom_type
-        self.temporal_the_geom_type = nil
-      end
-      set_the_geom_column!(self.the_geom_type)
-    end
-  rescue => e
-    self.handle_creation_error(e)
+    create_table_in_database unless migrate_existing_table
+    cartodbfy
   end
 
   def before_save
     self.updated_at = table_visualization.updated_at if table_visualization
   end #before_save
 
+  def create_table_in_database
+    owner.in_database.create_table self.name do
+      column :cartodb_id, "SERIAL PRIMARY KEY"
+      String :name
+      String :description, :text => true
+      DateTime :created_at, :default => Sequel::CURRENT_TIMESTAMP
+      DateTime :updated_at, :default => Sequel::CURRENT_TIMESTAMP
+    end
+  end
+
   def after_save
     super
-    manage_tags
     update_name_changes
     self.map.save
 
@@ -403,25 +163,20 @@ class Table < Sequel::Model(:user_tables)
     } if privacy == PRIVATE
   end
 
-  def propagate_name_change_to_table_visualization
-    table_visualization.name = name
-    table_visualization.store
-  end #propagate_name_change_to_table_visualization
-
   def after_create
     super
     self.create_default_map_and_layers
     self.create_default_visualization
     self.send_tile_style_request
-
-    owner.in_database(:as => :superuser).run(%Q{GRANT SELECT ON "#{self.name}" TO #{CartoDB::TILE_DB_USER};})
+    owner.in_database(:as => :superuser).run(%Q{
+      GRANT SELECT ON "#{self.name}"
+      TO #{CartoDB::TILE_DB_USER};
+    })
     set_default_table_privacy
-
     @force_schema = nil
     $tables_metadata.hset key, "user_id", user_id
     self.new_table = true
 
-    # finally, close off the data import
     if data_import_id
       @data_import = DataImport.find(id: data_import_id)
       @data_import.table_id   = id
@@ -429,29 +184,54 @@ class Table < Sequel::Model(:user_tables)
       @data_import.save
     end
     add_table_to_stats
-  rescue => e
-    self.handle_creation_error(e)
+  rescue => exception
+    CartoDB::Logger.info exception
+    CartoDB::Logger.info exception.backtrace
+    self.handle_creation_error(exception)
   end
 
-  def optimize
-    owner.in_database(as: :superuser).run("VACUUM FULL #{name}")
+  def before_destroy
+    @table_visualization                = table_visualization
+    @dependent_visualizations_cache     = dependent_visualizations.to_a
+    @non_dependent_visualizations_cache = non_dependent_visualizations.to_a
+    super
+  end
+
+  def after_destroy
+    super
+    $tables_metadata.del key
+    remove_table_from_stats
+    invalidate_varnish_cache
+    @dependent_visualizations_cache.each(&:delete)
+    @non_dependent_visualizations_cache.each do |visualization|
+      visualization.unlink_from(self)
+    end
+    @table_visualization.delete if @table_visualization
+
+    delete_tile_style
+    remove_table_from_user_database unless keep_user_database_table
   end
 
   def after_commit
     super
-    if self.new_table
-      begin
-        update_table_pg_stats
+    return self unless self.new_table
 
-        # Set default triggers
-        add_python
-        set_trigger_update_updated_at
-        set_trigger_cache_timestamp
-        set_trigger_check_quota
-      rescue => e
-        self.handle_creation_error(e)
-      end
-    end
+    update_table_pg_stats
+    add_python
+    set_trigger_update_updated_at
+    set_trigger_cache_timestamp
+    set_trigger_check_quota
+  rescue => e
+    self.handle_creation_error(e)
+  end
+
+  def propagate_name_change_to_table_visualization
+    table_visualization.name = name
+    table_visualization.store
+  end #propagate_name_change_to_table_visualization
+
+  def optimize
+    owner.in_database(as: :superuser).run("VACUUM FULL #{name}")
   end
 
   def handle_creation_error(e)
@@ -507,29 +287,6 @@ class Table < Sequel::Model(:user_tables)
     })
   rescue => exception
     raise exception if Rails.env.production? || Rails.env.staging?
-  end
-
-  def before_destroy
-    @table_visualization                = table_visualization
-    @dependent_visualizations_cache     = dependent_visualizations.to_a
-    @non_dependent_visualizations_cache = non_dependent_visualizations.to_a
-    super
-  end
-
-  def after_destroy
-    super
-    $tables_metadata.del key
-    Tag.filter(:user_id => user_id, :table_id => id).delete
-    remove_table_from_stats
-    invalidate_varnish_cache
-    @dependent_visualizations_cache.each(&:delete)
-    @non_dependent_visualizations_cache.each do |visualization|
-      visualization.unlink_from(self)
-    end
-    @table_visualization.delete if @table_visualization
-
-    delete_tile_style
-    remove_table_from_user_database unless keep_user_database_table
   end
 
   def remove_table_from_user_database
@@ -621,17 +378,6 @@ class Table < Sequel::Model(:user_tables)
   rescue
     false
   end #string_to_timestamp
-
-  def make_geom_valid
-    begin
-      # make timeout here long, but not infinite. 10mins = 600000 ms.
-      # TODO: extend .run to take a "long_running" indicator? See #730.
-      owner.in_database.run(%Q{SET statement_timeout TO 600000;UPDATE "#{self.name}" SET the_geom = ST_MakeValid(the_geom);SET statement_timeout TO DEFAULT})
-    rescue => e
-      CartoDB::Logger.info "Table#make_geom_valid error", "table #{self.name} make valid failed: #{e.inspect}"
-    end
-  end
-
 
   def name=(value)
     return if value == self[:name] || value.blank?
@@ -1143,9 +889,9 @@ class Table < Sequel::Model(:user_tables)
   def set_trigger_update_updated_at
     self.cartodbfy
     # this would really belong in a migration
-    owner.in_database(:as => :superuser).run('
-      DROP TRIGGER IF EXISTS update_updated_at_trigger ON "#{self.name}";
-    ')
+    owner.in_database(:as => :superuser).run(%Q{
+      DROP TRIGGER IF EXISTS update_updated_at_trigger ON #{name};
+    })
   end
 
   # move to C
@@ -1246,29 +992,9 @@ TRIGGER
     self.private? ? 'PRIVATE' : 'PUBLIC'
   end
 
-  #def visualization_ids
-  #  affected_visualization_records.select(:id).map do |visualization|
-  #    visualization.fetch(:id)
-  #  end
-  #end #visualization_ids
-
   def relator
     @relator ||= CartoDB::Table::Relator.new(Rails::Sequel.connection, self)
   end #relator
-
-  def set_table_id
-    self.table_id = self.get_table_id
-  end # set_table_id
-
-  def get_table_id
-    record = owner.in_database.select(:pg_class__oid)
-      .from(:pg_class)
-      .join_table(:inner, :pg_namespace, :oid => :relnamespace)
-      .where(:relkind => 'r', :nspname => 'public', :relname => name).first
-    record.nil? ? nil : record[:oid]
-  end # get_table_id
-
-
 
   private
 
@@ -1329,123 +1055,6 @@ TRIGGER
     CartoDB::NEXT_TYPE[cartodb_column_type]
   end
 
-  def set_the_geom_column!(type = nil)
-    if type.nil?
-      if self.schema(:reload => true).flatten.include?(THE_GEOM)
-        if self.schema.select{ |k| k[0] == THE_GEOM }.first[1] == "geometry"
-          if row = owner.in_database["select GeometryType(#{THE_GEOM}) FROM #{self.name} where #{THE_GEOM} is not null limit 1"].first
-            type = row[:geometrytype]
-          else
-            type = DEFAULT_THE_GEOM_TYPE
-          end
-        else
-          owner.in_database.rename_column(self.name, THE_GEOM, :the_geom_str)
-        end
-      else # Ensure a the_geom column, of type point by default
-        type = DEFAULT_THE_GEOM_TYPE
-      end
-    end
-    return if type.nil?
-
-    #if the geometry is MULTIPOINT we convert it to POINT
-    if type.to_s.downcase == "multipoint"
-      owner.in_database do |user_database|
-        user_database.run("SELECT AddGeometryColumn('#{self.name}','the_geom_simple',4326, 'POINT', 2);")
-        user_database.run(%Q{UPDATE "#{self.name}" SET the_geom_simple = ST_GeometryN(the_geom,1);})
-        user_database.run("SELECT DropGeometryColumn('#{self.name}','the_geom');");
-        user_database.run(%Q{ALTER TABLE "#{self.name}" RENAME COLUMN the_geom_simple TO the_geom;})
-      end
-      type = "point"
-    end
-
-    #if the geometry is LINESTRING or POLYGON we convert it to MULTILINESTRING and MULTIPOLYGON resp.
-    if ["linestring","polygon"].include?(type.to_s.downcase)
-      owner.in_database do |user_database|
-        if type.to_s.downcase == 'polygon'
-          user_database.run("SELECT AddGeometryColumn('#{self.name}','the_geom_simple',4326, 'MULTIPOLYGON', 2);")
-        else
-          user_database.run("SELECT AddGeometryColumn('#{self.name}','the_geom_simple',4326, 'MULTILINESTRING', 2);")
-        end
-        user_database.run(%Q{UPDATE "#{self.name}" SET the_geom_simple = ST_Multi(the_geom);})
-        user_database.run("SELECT DropGeometryColumn('#{self.name}','the_geom');");
-        user_database.run(%Q{ALTER TABLE "#{self.name}" RENAME COLUMN the_geom_simple TO the_geom;})
-        type = owner.in_database["select GeometryType(#{THE_GEOM}) FROM #{self.name} where #{THE_GEOM} is not null limit 1"].first[:geometrytype]
-      end
-    end
-
-    raise "Error: unsupported geometry type #{type.to_s.downcase} in CartoDB" unless CartoDB::VALID_GEOMETRY_TYPES.include?(type.to_s.downcase)
-
-    updates = false
-    type = type.to_s.upcase
-    owner.in_database do |user_database|
-      return if !force_schema.blank? && !user_database.schema(name, :reload => true).flatten.include?(THE_GEOM)
-      unless user_database.schema(name, :reload => true).flatten.include?(THE_GEOM)
-        updates = true
-        user_database.run("SELECT AddGeometryColumn ('#{self.name}','#{THE_GEOM}',#{CartoDB::SRID},'#{type}',2)")
-        user_database.run(%Q{CREATE INDEX ON "#{self.name}" USING GIST(the_geom)})
-      end
-      unless user_database.schema(name, :reload => true).flatten.include?(THE_GEOM_WEBMERCATOR)
-        updates = true
-        user_database.run("SELECT AddGeometryColumn ('#{self.name}','#{THE_GEOM_WEBMERCATOR}',#{CartoDB::GOOGLE_SRID},'GEOMETRY',2)")
-        user_database.run(%Q{SET statement_timeout TO 600000;UPDATE "#{self.name}" SET #{THE_GEOM_WEBMERCATOR}=CDB_TransformToWebmercator(#{THE_GEOM}) WHERE #{THE_GEOM} IS NOT NULL;SET statement_timeout TO DEFAULT})
-      end
-
-      # Ensure we add triggers and indexes when required
-      if user_database.schema(name, :reload => true).flatten.include?(THE_GEOM_WEBMERCATOR)
-        unless self.has_index? "#{self.name}_the_geom_webmercator_idx"
-          updates = true
-          user_database.run(%Q{CREATE INDEX ON "#{self.name}" USING GIST(#{THE_GEOM_WEBMERCATOR})})
-        end
-      end
-      if user_database.schema(name, :reload => true).flatten.include?(THE_GEOM)
-        unless self.has_index? "#{self.name}_the_geom_idx"
-          updates = true
-          user_database.run(%Q{CREATE INDEX ON "#{self.name}" USING GIST(the_geom)})
-        end
-      end
-
-    end
-    self.the_geom_type = type.downcase
-    save_changes unless new?
-    if updates
-      set_trigger_the_geom_webmercator
-    end
-  end
-
-  def create_table_in_database!
-    self.name ||= get_valid_name(self.name)
-
-    owner.in_database do |user_database|
-      if force_schema.blank?
-        user_database.create_table self.name do
-          column :cartodb_id, "SERIAL PRIMARY KEY"
-          String :name
-          String :description, :text => true
-          DateTime :created_at, :default => Sequel::CURRENT_TIMESTAMP
-          DateTime :updated_at, :default => Sequel::CURRENT_TIMESTAMP
-        end
-      else
-        sanitized_force_schema = force_schema.split(',').map do |column|
-          # Convert existing primary key into a unique key
-          if column =~ /^\s*\"([^\"]+)\"(.*)$/
-            "#{$1.sanitize} #{$2.gsub(/primary\s+key/i,"UNIQUE")}"
-          else
-            column.gsub(/primary\s+key/i,"UNIQUE")
-          end
-        end
-        sanitized_force_schema.unshift("cartodb_id SERIAL PRIMARY KEY").
-                               unshift("created_at timestamp").
-                               unshift("updated_at timestamp")
-        user_database.run(<<-SQL
-CREATE TABLE "#{self.name}" (#{sanitized_force_schema.join(', ')});
-ALTER TABLE  "#{self.name}" ALTER COLUMN created_at SET DEFAULT now();
-ALTER TABLE  "#{self.name}" ALTER COLUMN updated_at SET DEFAULT now();
-SQL
-        )
-      end
-    end
-  end
-
   def update_the_geom!(attributes, primary_key)
     return unless attributes[THE_GEOM].present? && attributes[THE_GEOM] != 'GeoJSON'
     # TODO: use this once the server geojson is updated
@@ -1458,32 +1067,6 @@ SQL
     geo_json = RGeo::GeoJSON.decode(attributes[THE_GEOM], :json_parser => :json).try(:as_text)
     raise CartoDB::InvalidGeoJSONFormat if geo_json.nil?
     owner.in_database.run(%Q{UPDATE "#{self.name}" SET the_geom = ST_GeomFromText('#{geo_json}',#{CartoDB::SRID}) where cartodb_id = #{primary_key}})
-  end
-
-  def manage_tags
-    if self[:tags].blank?
-      Tag.filter(:user_id => user_id, :table_id => id).delete
-    else
-      tag_names = tags.split(',')
-      table_tags = Tag.filter(:user_id => user_id, :table_id => id).all
-      unless table_tags.empty?
-        # Remove tags that are not in the new names list
-        table_tags.each do |tag|
-          unless tag_names.include?(tag.name)
-            tag.destroy
-          else
-            tag_names.delete(tag.name)
-          end
-        end
-      end
-      # Create the new tags in the this table
-      tag_names.each do |new_tag_name|
-        new_tag = Tag.new :name => new_tag_name
-        new_tag.user_id = user_id
-        new_tag.table_id = id
-        new_tag.save
-      end
-    end
   end
 
   def update_name_changes
@@ -1499,26 +1082,7 @@ SQL
         user: owner
       ) if layers.blank?
 
-      layers.each do |layer| 
-        layer.rename_table(@name_changed_from, name).save
-      end
-
-      # update tile styles
-      begin
-        # get old tile style
-        #old_style = tile_request('GET', "/tiles/#{@name_changed_from}/style?map_key=#{owner.get_map_key}").try(:body)
-
-        # parse old CartoCSS style out
-        #old_style = JSON.parse(old_style).with_indifferent_access[:style]
-
-        # rename common table name based variables
-        #old_style.gsub!(@name_changed_from, self.name)
-
-        # post new style
-        #tile_request('POST', "/tiles/#{self.name}/style?map_key=#{owner.get_map_key}", {"style" => old_style})
-      rescue => e
-        CartoDB::Logger.info "tilestyle#rename error for", "#{e.inspect}"
-      end
+      layers.each { |layer| layer.rename_table(@name_changed_from, name).save }
     end
     @name_changed_from = nil
   end
@@ -1569,39 +1133,6 @@ SQL
     CartodbStats.update_tables_counter_per_user(-1, self.owner.username)
     CartodbStats.update_tables_counter_per_host(-1)
     CartodbStats.update_tables_counter_per_plan(-1, self.owner.account_type)
-  end
-
-  def create_the_geom_if_not_exists(table_name)
-    <<-SQL
-      CREATE OR REPLACE FUNCTION check_the_geom_exists(tablename text)
-      RETURNS VOID AS $BODY$
-      DECLARE the_geom_exists integer := 0;
-      BEGIN
-          SELECT count(attname) INTO the_geom_exists
-          FROM pg_attribute
-          INNER JOIN pg_class ON pg_class.oid = pg_attribute.attrelid
-          WHERE pg_attribute.attname = 'the_geom' AND pg_class.relname = tablename;
-
-          IF the_geom_exists = 0 THEN
-            PERFORM AddGeometryColumn(tablename,'#{THE_GEOM}',#{CartoDB::GOOGLE_SRID},'GEOMETRY',3);
-          END IF;
-
-          SELECT count(attname) INTO the_geom_exists
-          FROM pg_attribute
-          INNER JOIN pg_class ON pg_class.oid = pg_attribute.attrelid
-          WHERE pg_attribute.attname = 'the_geom_webmercator' AND pg_class.relname = tablename;
-
-          IF the_geom_exists = 0 THEN
-            PERFORM AddGeometryColumn(tablename,'#{THE_GEOM_WEBMERCATOR}',#{CartoDB::GOOGLE_SRID},'GEOMETRY',3);
-          END IF;
-
-          RETURN;
-      END;
-      $BODY$
-      LANGUAGE plpgsql VOLATILE;
-
-      SELECT check_the_geom_exists('#{table_name}');
-    SQL
   end
 end
 

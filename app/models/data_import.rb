@@ -355,19 +355,17 @@ class DataImport < Sequel::Model
       SET SCHEMA public
     }) unless schema == 'public'
 
-    candidates  = table_owner.tables.map(&:name)
-    name        = Table.get_valid_table_name(name, name_candidates: candidates)
-
-    current_user.in_database.execute(%Q{
-      ALTER TABLE "public"."#{table_name}"
-      RENAME TO #{name}
-    })
-
     table                         = Table.new
     table.user_id                 = table_owner.id
     table.data_import_id          = self.id
     table.name                    = name
     table.migrate_existing_table  = name
+
+    current_user.in_database.execute(%Q{
+      ALTER TABLE "public"."#{table_name}"
+      RENAME TO #{table.name}
+    })
+
     table.save
 
     self.table_id   = table.id
