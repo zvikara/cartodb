@@ -34,6 +34,7 @@ describe Table do
     @new_user = new_user
     @user     = create_user(:quota_in_bytes => @quota_in_bytes, :table_quota => @table_quota)
     puts "[rspec][table_spec] Running..."
+    @user.rebuild_quota_trigger
   end
   before(:each) do
     CartoDB::Varnish.any_instance.stubs(:send_command).returns(true)
