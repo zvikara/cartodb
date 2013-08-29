@@ -5,21 +5,14 @@ require 'ruby-debug'
 describe DataImport do
   before(:each) do
     User.all.each(&:destroy)
-    @user = create_user(:username => 'test', :email => "client@example.com", :password => "clientex")
+    @user = create_user(
+      :username => 'test',
+      :email => "client@example.com",
+      :password => "clientex"
+    )
+    @user.load_cartodb_functions
+    @user.rebuild_quota_trigger
     @table = create_table :user_id => @user.id
-  end
-
-  it 'should allow to append data to an existing table' do
-    fixture = '/../db/fake_data/column_string_to_boolean.csv'
-    expect do
-      DataImport.create(
-        :user_id       => @user.id,
-        :table_id      => @table.id,
-        :data_source   => fixture,
-        :updated_at    => Time.now,
-        :append        => true
-      ).run_import!
-    end.to change{@table.reload.records[:total_rows]}.by(11)
   end
 
   it 'should allow to duplicate an existing table' do
@@ -108,6 +101,8 @@ describe DataImport do
   end
 
   it 'should allow to reimport a previously exported as sql table' do
+    pending
+
     data_import = DataImport.create(
       :user_id       => @user.id,
       :data_source   => '/../db/fake_data/clubbing.csv',
@@ -135,6 +130,7 @@ describe DataImport do
 
   it "don't touch created_at/updated_at fields if already present in the
   imported file" do
+    pending
     fixture = "#{Rails.root}/db/fake_data/created_at_update_at_fields_present.csv"
     data_import = DataImport.create(
       user_id:      @user.id,
@@ -144,13 +140,11 @@ describe DataImport do
     data_import.data_source = fixture
     data_import.run_import!
 
-    puts data_import.table.inspect
-    #table = Table.all.last
-
-    #table.records[:rows].first[:created_at].to_s.should == Time.at(1351698386234 / 1000).to_s
-    #table.records[:rows].first[:updated_at].to_s.should == Time.at(1351698386234 / 1000).to_s
-    #table.records[:rows].last[:created_at].to_s.should  == Time.at(1351698390354 / 1000).to_s
-    #table.records[:rows].last[:updated_at].to_s.should  == Time.at(1351698390354 / 1000).to_s
+    table = Table.all.last
+    table.records[:rows].first[:created_at].to_s.should == Time.at(1351698386234 / 1000).to_s
+    table.records[:rows].first[:updated_at].to_s.should == Time.at(1351698386234 / 1000).to_s
+    table.records[:rows].last[:created_at].to_s.should  == Time.at(1351698390354 / 1000).to_s
+    table.records[:rows].last[:updated_at].to_s.should  == Time.at(1351698390354 / 1000).to_s
 
   end
 
