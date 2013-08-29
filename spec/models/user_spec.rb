@@ -8,6 +8,8 @@ describe User do
     @user     = create_user :email => 'admin@example.com', :username => 'admin', :password => 'admin123'
     @user2    = create_user :email => 'user@example.com',  :username => 'user',  :password => 'user123'
 
+    @user.rebuild_quota_trigger
+    @user2.rebuild_quota_trigger
     puts "[rspec][user_spec] Loading user data..."
     reload_user_data(@user) && @user.reload
 
@@ -398,6 +400,7 @@ describe User do
 
   it "should remove its database and database user after deletion" do
     doomed_user = create_user :email => 'doomed1@example.com', :username => 'doomed1', :password => 'doomed123'
+    doomed_user.rebuild_quota_trigger
     create_table :user_id => doomed_user.id, :name => 'My first table', :privacy => Table::PUBLIC
     doomed_user.reload
     Rails::Sequel.connection["select count(*) from pg_catalog.pg_database where datname = '#{doomed_user.database_name}'"]
