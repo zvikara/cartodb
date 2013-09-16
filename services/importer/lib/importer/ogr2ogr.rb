@@ -77,7 +77,7 @@ module CartoDB
       end #postgres_options
 
       def layer_creation_options
-        "-lco #{dimension_option} -lco #{precision_option}"
+        "-lco '#{dimension_option} #{precision_option} #{the_geom_name_option}'"
       end #layer_creatiopn_options
 
       def track_points_option
