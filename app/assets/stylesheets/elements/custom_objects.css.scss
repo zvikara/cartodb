@@ -522,7 +522,7 @@
       background:white;
 
       &:before {
-        display:none;
+        display:block;
         content:' ';
         position:absolute;
         top:1px;
@@ -538,7 +538,7 @@
     }
 
     &.enabled {
-      span.check{
+      span.radio{
         &:before {
           display:block;
         }
