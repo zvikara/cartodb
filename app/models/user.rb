@@ -122,9 +122,17 @@ class User < Sequel::Model
   #
   def self.overquota(delta = 0)
     User.where(enabled: true).all.select do |u|
-        limit = u.map_view_quota.to_i - (u.map_view_quota.to_i * delta)
-        u.get_api_calls(from: u.last_billing_cycle, to: Date.today).sum > limit
+      map_view_limit = u.map_view_quota.to_i - (u.map_view_quota.to_i * delta)
+      geocoding_limit = u.geocoding_quota.to_i - (u.geocoding_quota.to_i * delta)
+      over_map_view_quota = u.get_api_calls(from: u.last_billing_cycle, to: Date.today).sum > map_view_limit
+      over_geocoding_quota = u.get_geocoding_calls > geocoding_limit
+      over_map_view_quota || over_geocoding_quota
     end
+  end
+
+  def get_geocoding_calls(options = {})
+    options[:from] ||= self.last_billing_cycle
+    Geocoding.where('user_id = ? AND created_at > ?', self.id, options[:from]).sum(:total_rows).to_i
   end
 
   def self.password_digest(password, salt)

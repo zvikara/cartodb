@@ -138,6 +138,20 @@ describe User do
     end
   end
 
+  describe '#get_geocoding_calls' do
+    it "should return the summatory of all *requested* rows since the given date" do
+      FactoryGirl.create(:geocoding, user: @user, total_rows: 10)
+      FactoryGirl.create(:geocoding, user: @user, total_rows: 10, created_at: @user.last_billing_cycle - 1.month)
+      @user.get_geocoding_calls.should == 10
+      @user.get_geocoding_calls(from: @user.last_billing_cycle - 2.months).should == 20
+    end
+
+    it "should return 0 when no geocodings" do
+      delete_user_data @user
+      @user.get_geocoding_calls(from: 1.month.ago).should == 0
+    end
+  end
+
   it "should have many tables" do
     @user2.tables.should be_empty
     create_table :user_id => @user2.id, :name => 'My first table', :privacy => Table::PUBLIC
