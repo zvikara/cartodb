@@ -30,3 +30,4 @@
 //= require ../../../lib/assets/javascripts/cartodb/table/table
 //= require_tree ../../../lib/assets/javascripts/cartodb/table/views
 //= require_tree ../../../lib/assets/javascripts/cartodb/dashboard/views
+//= require moment
