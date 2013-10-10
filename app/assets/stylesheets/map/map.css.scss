@@ -489,6 +489,10 @@ div.map {
       @include transition-property("text-indent");
       @include transition-duration(300ms);
       @include box-shadow(rgba(0, 0, 0, 0.055) 0 3px 1px 0);
+
+      &.warn {
+       background-color: rgba(#FFFFBF, 0.90);
+      }
     }
   } //div.sqlview
 
@@ -634,6 +638,15 @@ div.cartodb-edit-buttons {
 
     &:first-child {@include border-left-radius(3px);}
     &:last-child {@include border-right-radius(3px); border-right:1px solid #B0B0B0;}
+  }
+}
+
+// Default styles for infowindow
+div.cartodb-popup {
+  h2 { line-height:normal }
+
+  &.blue.header .cartodb-popup-header a {
+    color:white;
   }
 }
 

@@ -268,7 +268,7 @@ class Table < Sequel::Model(:user_tables)
       # If we already have a cartodb_id column let's rename it to an auxiliary column
       aux_cartodb_id_column = nil
       if schema.present? && schema.flatten.include?(:cartodb_id)
-         @data_import.log_update('Renaming cartodb_id from import file')
+         @data_import.log << ('Renaming cartodb_id from import file')
          aux_cartodb_id_column = "cartodb_id_aux_#{Time.now.to_i}"
          user_database.run(%Q{ALTER TABLE "#{self.name}" RENAME COLUMN cartodb_id TO #{aux_cartodb_id_column}})
          self.schema
@@ -282,7 +282,7 @@ class Table < Sequel::Model(:user_tables)
         if aux_cartodb_id_column.nil?
           aux_cartodb_id_column = "ogc_fid"
         else
-          @data_import.log_update('Removing ogc_fid from import file')
+          @data_import.log << ('Removing ogc_fid from import file')
           user_database.run(%Q{ALTER TABLE "#{self.name}" DROP COLUMN ogc_fid})
         end
       end
@@ -290,7 +290,7 @@ class Table < Sequel::Model(:user_tables)
         if aux_cartodb_id_column.nil?
           aux_cartodb_id_column = "gid"
         else
-          @data_import.log_update('Removing gid from import file')
+          @data_import.log << ('Removing gid from import file')
           user_database.run(%Q{ALTER TABLE "#{self.name}" DROP COLUMN gid})
         end
       end
@@ -306,7 +306,7 @@ class Table < Sequel::Model(:user_tables)
       # If there's an auxiliary column, copy and restart the sequence to the max(cartodb_id)+1
       # Do this before adding constraints cause otherwise we can have duplicate key errors
       if aux_cartodb_id_column.present?
-        @data_import.log_update('Cleaning supplied cartodb_id')
+        @data_import.log << ('Cleaning supplied cartodb_id')
         user_database.run(%Q{UPDATE "#{self.name}" SET cartodb_id = CAST(#{aux_cartodb_id_column} AS INTEGER)})
         user_database.run(%Q{ALTER TABLE "#{self.name}" DROP COLUMN #{aux_cartodb_id_column}})
         cartodb_id_sequence_name = user_database["SELECT pg_get_serial_sequence('#{self.name}', 'cartodb_id')"].first[:pg_get_serial_sequence]
@@ -324,7 +324,7 @@ class Table < Sequel::Model(:user_tables)
       begin
         user_database.run(%Q{ALTER TABLE "#{self.name}" ADD PRIMARY KEY (cartodb_id)})
       rescue
-        @data_import.log_update("Renaming cartodb_id to invalid_cartodb_id") if @data_import
+        @data_import.log << ("Renaming cartodb_id to invalid_cartodb_id") if @data_import
         user_database.run(%Q{ALTER TABLE "#{self.name}" ALTER COLUMN cartodb_id DROP DEFAULT})
         user_database.run(%Q{ALTER TABLE "#{self.name}" ALTER COLUMN cartodb_id DROP NOT NULL})
         user_database.run(%Q{DROP SEQUENCE IF EXISTS #{self.name}_cartodb_id_seq})
@@ -434,7 +434,7 @@ class Table < Sequel::Model(:user_tables)
   end
 
   def optimize
-    owner.in_database(as: :superuser).run("VACUUM FULL #{name}")
+    owner.in_database(as: :superuser).run("VACUUM FULL public.#{name}")
   end
 
   def after_commit
@@ -459,13 +459,13 @@ class Table < Sequel::Model(:user_tables)
 
     # Remove the table, except if it already exists
     unless self.name.blank? || e.message =~ /relation .* already exists/
-      @data_import.log_update("Dropping table #{self.name}") if @data_import
+      @data_import.log << ("Dropping table #{self.name}") if @data_import
       $tables_metadata.del key
 
       self.remove_table_from_user_database      
     end
 
-    @data_import.log_error("Import Error: #{e.try(:message)}") if @data_import
+    @data_import.log << ("Import Error: #{e.try(:message)}") if @data_import
 
     raise e
   end
@@ -755,6 +755,7 @@ class Table < Sequel::Model(:user_tables)
     primary_key = nil
     owner.in_database do |user_database|
       schema = user_database.schema(name, :reload => true).map{|c| c.first}
+      raw_attributes.delete(:id) unless schema.include?(:id)
       attributes = raw_attributes.dup.select{ |k,v| schema.include?(k.to_sym) }
       if attributes.keys.size != raw_attributes.keys.size
         raise CartoDB::InvalidAttributes, "Invalid rows: #{(raw_attributes.keys - attributes.keys).join(',')}"
@@ -776,7 +777,9 @@ class Table < Sequel::Model(:user_tables)
           end
         end
 
-        if invalid_column.nil? || new_column_type != get_new_column_type(invalid_column)
+        new_column_type = get_new_column_type(invalid_column)
+          
+        if invalid_column.nil?
           raise e
         else
           user_database.set_column_type(self.name, invalid_column.to_sym, new_column_type)
@@ -792,6 +795,8 @@ class Table < Sequel::Model(:user_tables)
     rows_updated = 0
     owner.in_database do |user_database|
       schema = user_database.schema(name, :reload => true).map{|c| c.first}
+      raw_attributes.delete(:id) unless schema.include?(:id)
+      
       attributes = raw_attributes.dup.select{ |k,v| schema.include?(k.to_sym) }
       if attributes.keys.size != raw_attributes.keys.size
         raise CartoDB::InvalidAttributes, "Invalid rows: #{(raw_attributes.keys - attributes.keys).join(',')}"
@@ -1481,16 +1486,24 @@ SQL
 
   def update_the_geom!(attributes, primary_key)
     return unless attributes[THE_GEOM].present? && attributes[THE_GEOM] != 'GeoJSON'
-    # TODO: use this once the server geojson is updated
-    # begin
-    #   owner.in_database.run("UPDATE #{self.name} SET the_geom = ST_SetSRID(ST_GeomFromGeoJSON('#{attributes[THE_GEOM].sanitize_sql}'),#{CartoDB::SRID}) where cartodb_id = #{primary_key}")
-    # rescue => e
-    #   raise CartoDB::InvalidGeoJSONFormat
-    # end
+    geojson = attributes[THE_GEOM]
+    geojson = geojson.to_json if geojson.is_a? Hash
 
-    geo_json = RGeo::GeoJSON.decode(attributes[THE_GEOM], :json_parser => :json).try(:as_text)
-    raise CartoDB::InvalidGeoJSONFormat if geo_json.nil?
-    owner.in_database.run(%Q{UPDATE "#{self.name}" SET the_geom = ST_GeomFromText('#{geo_json}',#{CartoDB::SRID}) where cartodb_id = #{primary_key}})
+    geojson = RGeo::GeoJSON.decode(geojson, :json_parser => :json)
+    raise(CartoDB::InvalidGeoJSONFormat, "Invalid geometry") unless valid_geometry?(geojson)
+    
+    begin
+      owner.in_database.run(%Q{UPDATE "#{self.name}" SET the_geom =
+      ST_GeomFromText('#{geojson.as_text}',#{CartoDB::SRID}) where cartodb_id =
+      #{primary_key}})
+          
+    rescue => exception
+      raise CartoDB::InvalidGeoJSONFormat, "Invalid geometry"
+    end
+  end
+
+  def valid_geometry?(feature)
+    !feature.nil? && !feature.is_empty?
   end
 
   def manage_tags

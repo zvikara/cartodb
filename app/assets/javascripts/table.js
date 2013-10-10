@@ -1,5 +1,7 @@
 //= require codemirror
-//= require simple-hint
+//= require show-hint
+//= require anyword-hint
+//= require custom-list-hint
 //= require select2.min
 //= require jquery.faviconNotify
 //= require rgbcolor
@@ -14,10 +16,11 @@
 //= require jquery.fileupload
 //= require jquery.fileupload-fp
 //= require jquery.fileupload-ui
+//= require leaflet.draw
 //= require carto
 //= require ../../../lib/assets/javascripts/utils/postgres.codemirror
 //= require ../../../lib/assets/javascripts/utils/carto.codemirror
-//= require_tree ../../../lib/assets/javascripts/cartodb/models
+//= require models
 //= require ../../../lib/assets/javascripts/cartodb/common/dropdown_menu
 //= require ../../../lib/assets/javascripts/cartodb/common/forms/string_field
 //= require ../../../lib/assets/javascripts/cartodb/common/import_pane.js

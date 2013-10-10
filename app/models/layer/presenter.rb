@@ -47,6 +47,8 @@ module CartoDB
       end #with_kind_as_type
 
       def infowindow_data
+        template = layer.infowindow['template']
+        return layer.infowindow unless template.nil? || template.empty?
         layer.infowindow.merge(template: File.read(layer.template_path))
       rescue => exception
       end #infowindow_data
@@ -69,13 +71,6 @@ module CartoDB
         return layer.options if options[:full]
         sql = sql_from(layer.options)
         layer.options.select { |key, value| public_options.include?(key.to_s) }
-        #.merge(
-        #  sql:                sql,
-        #  query:              wrap(sql, layer.options),
-        #  cartocss:           layer.options.fetch('tile_style'),
-        #  cartocss_version:   CARTO_CSS_VERSION,
-        #  interactivity:      layer.options.fetch('interactivity')
-        #)
       end #options_data
 
       def sql_from(options)

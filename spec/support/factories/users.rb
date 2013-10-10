@@ -26,6 +26,7 @@ module CartoDB
       user.quota_in_bytes        = attributes[:quota_in_bytes]  if attributes[:quota_in_bytes]
       user.account_type          = attributes[:account_type]    if attributes[:account_type]
       user.map_view_quota        = attributes[:map_view_quota]  if attributes.has_key?(:map_view_quota)
+      user.map_view_block_price  = attributes[:map_view_block_price]  if attributes.has_key?(:map_view_block_price)
       user.period_end_date       = attributes[:period_end_date] if attributes.has_key?(:period_end_date)
       user.user_timeout          = attributes[:user_timeout] || 300000
       user.database_timeout      = attributes[:database_timeout] || 300000
@@ -71,6 +72,7 @@ module CartoDB
       user.layers_dataset.destroy
       user.assets_dataset.destroy
       user.data_imports_dataset.destroy
+      user.geocodings_dataset.destroy
     end
   end
 end

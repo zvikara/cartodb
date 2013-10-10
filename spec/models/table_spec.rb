@@ -20,12 +20,17 @@ def create_import(user, file_name, name=nil)
     data_source:  file_name,
     table_name:   name
   )
-  @data_import.send(:new_importer, file_name)
+  def @data_import.data_source=(filepath)
+    self.values[:data_type] = 'file'
+    self.values[:data_source] = filepath
+  end
+
+  @data_import.data_source =  file_name
+  @data_import.send :new_importer
   @data_import
 end
 
 describe Table do
-
   before(:all) do
     CartoDB::Varnish.any_instance.stubs(:send_command).returns(true)
     puts "\n[rspec][table_spec] Creating test user database..."
@@ -866,7 +871,6 @@ describe Table do
                                     :table_name    => 'rescol',
                                     :data_source   => '/../db/fake_data/reserved_columns.csv' )
       data_import.run_import!
-
       table.run_query("select name from table1 where cartodb_id = '#{pk}'")[:rows].first[:name].should == "name #1"
     end
 
@@ -1019,7 +1023,7 @@ describe Table do
 
       lat = -43.941
       lon = 3.429
-      the_geom = %Q{\{"type":"Point","coordinates":[#{lon},#{lat}]\}}
+      the_geom = %Q{{"type":"Point","coordinates":[#{lon},#{lat}]}}
       pk = table.insert_row!({:name => "First check_in", :the_geom => the_geom})
 
       query_result = @user.run_query("select ST_X(the_geom) as lon, ST_Y(the_geom) as lat from #{table.name} where cartodb_id = #{pk} limit 1")
@@ -1062,7 +1066,7 @@ describe Table do
       lon = 3.429
       pk = table.insert_row!({:name => "First check_in"})
 
-      the_geom = %Q{\{"type":"Point","coordinates":[#{lon},#{lat}]\}}
+      the_geom = %Q{{"type":"Point","coordinates":[#{lon},#{lat}]}}
       table.update_row!(pk, {:the_geom => the_geom})
 
       query_result = @user.run_query("select ST_X(the_geom) as lon, ST_Y(the_geom) as lat from #{table.name} where cartodb_id = #{pk} limit 1")
@@ -1276,7 +1280,7 @@ describe Table do
       invalid_cartodb_id_schema.should be_present
     end
 
-    it "should return geometry types" do
+    it "should return geometry types", now: true do
       data_import = DataImport.create( :user_id       => @user.id,
                                        :data_source   => '/../db/fake_data/gadm4_export.csv' )
       data_import.run_import!
@@ -1441,7 +1445,7 @@ describe Table do
       lon = 3.429
       pk = table.insert_row!({:name => "First check_in"})
 
-      the_geom = %Q{\{"type":"Point","coordinates":[#{lon},#{lat}]\}}
+      the_geom = %Q{{"type":"Point","coordinates":[#{lon},#{lat}]}}
       table.update_row!(pk, {:the_geom => the_geom})
 
       query_result = @user.run_query("select ST_X(ST_TRANSFORM(the_geom_webmercator,4326)) as lon, ST_Y(ST_TRANSFORM(the_geom_webmercator,4326)) as lat from #{table.name} where cartodb_id = #{pk} limit 1")
@@ -1458,7 +1462,7 @@ describe Table do
       lon = 3.429
       pk = table.insert_row!({:name => "First check_in"})
 
-      the_geom = %Q{\{"type":"Point","coordinates":[#{lon},#{lat}]\}}
+      the_geom = %Q{{"type":"Point","coordinates":[#{lon},#{lat}]}}
       table.update_row!(pk, {:the_geom => the_geom})
 
       query_result = @user.run_query("select ST_X(ST_TRANSFORM(the_geom_webmercator,4326)) as lon, ST_Y(ST_TRANSFORM(the_geom_webmercator,4326)) as lat from #{table.name} where cartodb_id = #{pk} limit 1")
@@ -1525,7 +1529,7 @@ describe Table do
 
         lat = -43.941
         lon = 3.429
-        the_geom = %Q{\{"type":"Point","coordinates":[#{lon},#{lat}]\}}
+        the_geom = %Q{{"type":"Point","coordinates":[#{lon},#{lat}]}}
         pk = table.insert_row!({:name => "First check_in", :the_geom => the_geom})
 
         records = table.records(:page => 0, :rows_per_page => 1)
@@ -1541,7 +1545,7 @@ describe Table do
 
         lat = -43.941
         lon = 3.429
-        the_geom = %Q{\{"type":""""Point","coordinates":[#{lon},#{lat}]\}}
+        the_geom = %Q{{"type":""""Point","coordinates":[#{lon},#{lat}]I}}
         lambda {
           table.insert_row!({:name => "First check_in", :the_geom => the_geom})
         }.should raise_error(CartoDB::InvalidGeoJSONFormat)
