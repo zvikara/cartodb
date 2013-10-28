@@ -7,7 +7,7 @@ module CartoDB
     class Proxy
       SERVER_XPATH  = "//OnlineResource[1]"
       FORMATS_XPATH = "//GetMap/Format"
-      LAYERS_XPATH  = "//Capability/Layer/Layer[1]/Layer/Title"
+      LAYERS_XPATH  = "//Layer[@queryable=1][BoundingBox]/Title"
 
       def initialize(url, preloaded_xml=nil)
         @url        = url
