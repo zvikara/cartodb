@@ -17,4 +17,3 @@ class AddModifiedAtEtagAndChecksumToSynchronization < Sequel::Migration
     end
   end
 end
-
