@@ -73,7 +73,6 @@ describe Proxy do
     it 'returns available layers' do
       proxy = Proxy.new(@url, @xml)
       proxy.run
-      proxy.layers.inspect
       proxy.layers.length.must_equal 3
     end
   end

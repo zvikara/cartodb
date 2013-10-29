@@ -43,7 +43,11 @@ module CartoDB
 
       def layers
         document.xpath(LAYERS_XPATH).map { |element| 
-          { name: element.text, attribution: nil } 
+          { 
+            name:         element.xpath("//Name").first.text,
+            title:        element.xpath("//Title").first.text,
+            attribution:  nil
+          } 
         }
       end
 
