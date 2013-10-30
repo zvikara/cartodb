@@ -58,6 +58,11 @@ describe Proxy do
       proxy.response.must_equal @xml
       proxy.run
       proxy.response.must_equal @xml
+
+      url = "http://www2.demis.nl/worldmap/wms.asp?request=GetCapabilities&version=1.0.0"
+      proxy = Proxy.new(url)
+      proxy.run
+      proxy.layers
     end
   end
 
