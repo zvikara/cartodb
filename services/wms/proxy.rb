@@ -7,7 +7,7 @@ module CartoDB
     class Proxy
       SERVER_XPATH  = "//OnlineResource[1]"
       FORMATS_XPATH = "//GetMap/Format"
-      LAYERS_XPATH  = "//Layer[@queryable=1][BoundingBox]/Title"
+      LAYERS_XPATH  = "//Layer[@queryable=1][BoundingBox]"
 
       def initialize(url, preloaded_xml=nil)
         @url        = url
@@ -44,9 +44,11 @@ module CartoDB
       def layers
 
         document.xpath(LAYERS_XPATH).map { |element| 
+          name  = element.xpath("./Name").first
+          title = element.xpath("./Title").first
           { 
-            name:         element.xpath("//Name").first.text,
-            title:        element.xpath("//Title").first.text,
+            name:         (name.text if name),
+            title:        (title.text if title),
             attribution:  nil
           } 
         }
