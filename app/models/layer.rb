@@ -3,9 +3,10 @@
 class Layer < Sequel::Model
   plugin :serialization, :json, :options, :infowindow
   
-  ALLOWED_KINDS = %W{ carto tiled background gmapsbase wms }
-  PUBLIC_ATTRIBUTES = %W{ options kind infowindow id order }
-  TEMPLATES_MAP = {
+  ALLOWED_KINDS     = %w(carto tiled background gmapsbase wms)
+  BASE_LAYER_KINDS  = %w(tiled background gmapsbase wms)
+  PUBLIC_ATTRIBUTES = %w(options kind infowindow id order)
+  TEMPLATES_MAP     = {
     'table/views/infowindow_light' =>               'infowindow_light',
     'table/views/infowindow_dark' =>                'infowindow_dark',
     'table/views/infowindow_light_header_blue' =>   'infowindow_light_header_blue',
@@ -109,7 +110,7 @@ class Layer < Sequel::Model
   end #data_layer?
 
   def base_layer?
-    !data_layer?
+    BASE_LAYER_KINDS.include?(kind)
   end #base_layer?
 
   def register_table_dependencies(db=Rails::Sequel.connection)
