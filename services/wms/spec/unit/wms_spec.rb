@@ -58,11 +58,6 @@ describe Proxy do
       proxy.response.must_equal @xml
       proxy.run
       proxy.response.must_equal @xml
-
-      url = "http://www2.demis.nl/worldmap/wms.asp?request=GetCapabilities&version=1.0.0"
-      proxy = Proxy.new(url)
-      proxy.run
-      proxy.layers
     end
   end
 
@@ -79,6 +74,16 @@ describe Proxy do
       proxy = Proxy.new(@url, @xml)
       proxy.run
       proxy.layers.length.must_equal 3
+
+      url = "http://www2.demis.nl/worldmap/wms.asp?request=GetCapabilities&version=1.0.0"
+      proxy = Proxy.new(url)
+      proxy.run
+      proxy.layers.wont_be_empty
+
+      url = "http://nowcoast.noaa.gov/wms/com.esri.wms.Esrimap/obs?service=WMS&request=GetCapabilities"
+      proxy = Proxy.new(url)
+      proxy.run
+      proxy.layers.wont_be_empty
     end
   end
 
