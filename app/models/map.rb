@@ -14,10 +14,15 @@ class Map < Sequel::Model
   many_to_many  :base_layers, clone: :layers, right_key: :layer_id
 
   many_to_many  :data_layers, clone: :layers, right_key: :layer_id, 
-                conditions: { kind: "carto" }
+                 conditions: { kind: "carto" }
+                    
+  many_to_many  :user_layers, clone: :layers, right_key: :layer_id, 
+                conditions: "kind IN
+                  ('tiled', 'background', 'gmapsbase', 'wms')"
 
-  many_to_many  :user_layers, clone: :layers, right_key: :layer_id,
-                conditions: "kind NOT LIKE 'carto'"
+  many_to_many  :other_layers, clone: :layers, right_key: :layer_id,
+                conditions: "kind NOT IN
+                  ('carto', 'tiled', 'background', 'gmapsbase', 'wms')"
 
   plugin :association_dependencies, :layers => :nullify
 

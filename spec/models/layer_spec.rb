@@ -29,7 +29,12 @@ describe Layer do
       l.options.should == Cartodb.config[:layer_opts]["base"]["options"]
       l = Layer.create(Cartodb.config[:layer_opts]["gmaps"]).reload
       l.kind.should == 'gmapsbase'
-      l.options.should == Cartodb.config[:layer_opts]["gmaps"]["options"]
+
+      l = Layer.create(
+        options: "{\"service\":\"WMS\",\"request\":\"GetMap\",\"version\":\"1.1.1\",\"layers\":\"ch.swisstopo.pixelkarte-pk1000.metadata-kartenblatt_name\",\"styles\":\"\",\"format\":\"image/png\",\"transparent\":true,\"urlTemplate\":\"https://wms.geo.admin.ch/?\",\"name\":\"ch.swisstopo.pixelkarte-pk1000.metadata-kartenblatt_name\",\"type\":\"wms\",\"order\":2}",
+        kind: "wms",
+        order: 2
+      )
     end
 
     it "should not allow to create layers of unkown types" do
@@ -194,8 +199,8 @@ describe Layer do
   end
 
   describe '#base_layer?' do
-    it 'returns true if its kind is different from carto' do
-      layer = Layer.new(kind: 'bogus')
+    it 'returns true if kind is in BASE_LAYER_KINDS' do
+      layer = Layer.new(kind: Layer::BASE_LAYER_KINDS.first)
       layer.base_layer?.should == true
     end 
   end #base_layer?
