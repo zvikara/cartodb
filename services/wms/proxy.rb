@@ -47,10 +47,31 @@ module CartoDB
           name  = element.xpath("./Name").first
           title = element.xpath("./Title").first
           { 
-            name:         (name.text if name),
-            title:        (title.text if title),
-            attribution:  nil
+            name:           (name.text if name),
+            title:          (title.text if title),
+            bounding_boxes: bounding_boxes_for(element),
+            attribution:    nil
           } 
+        }
+      end
+
+      def bounding_boxes_for(element)
+        bounding_boxes = element.xpath("./BoundingBox").map { |element|
+          srs   = element.xpath("./@SRS").first
+          crs   = element.xpath("./@CRS").first
+          minx  = element.xpath("./@minx").first
+          miny  = element.xpath("./@miny").first
+          maxx  = element.xpath("./@maxx").first
+          maxy  = element.xpath("./@maxy").first
+
+          {
+            srs: (srs.value if srs),
+            crs: (crs.value if crs),
+            minx: (minx.value if minx),
+            miny: (miny.value if miny),
+            maxx: (maxx.value if maxx),
+            maxy: (maxy.value if maxy),
+          }
         }
       end
 
