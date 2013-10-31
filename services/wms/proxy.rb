@@ -7,7 +7,7 @@ module CartoDB
     class Proxy
       SERVER_XPATH  = "//OnlineResource[1]"
       FORMATS_XPATH = "//GetMap/Format"
-      LAYERS_XPATH  = "//Layer[@queryable=1][BoundingBox]"
+      LAYERS_XPATH  = "//Layer[@queryable=1][BoundingBox or LatLonBoundingBox]"
 
       def initialize(url, preloaded_xml=nil)
         @url        = url
@@ -34,7 +34,7 @@ module CartoDB
       end
 
       def server
-        document.at_xpath(SERVER_XPATH)['href']
+        (document.at_xpath(SERVER_XPATH) || {})['href']
       end
 
       def formats
