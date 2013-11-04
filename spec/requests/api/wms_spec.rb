@@ -41,5 +41,14 @@ describe Api::Json::WmsController do
       representation.fetch('formats').should_not be_empty
       representation.fetch('layers').should_not be_empty
     end
+
+    it "returns 400 if it can't fetch the URL" do
+      @endpoint     = 'lalala'
+      @url          = CGI.escape(@endpoint)
+
+      get "/api/v2/wms?url=#{@url}&api_key=#{@api_key}", {}, @headers
+      last_response.status.should == 400
+      JSON.parse(last_response.body).fetch('errors').should_not be_empty
+    end
   end
 end
