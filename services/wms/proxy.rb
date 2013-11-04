@@ -1,4 +1,5 @@
 # encoding: utf-8
+require 'uri'
 require 'nokogiri'
 require 'typhoeus'
 
@@ -25,7 +26,9 @@ module CartoDB
       end 
 
       def request_capabilities
-        @response = Typhoeus.get(url).response_body
+        response = Typhoeus.get(url)
+        raise URI::InvalidURIError unless [200, 201].include?(response.code)
+        @response = response.response_body
         nil
       end 
 
