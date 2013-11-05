@@ -1,5 +1,5 @@
 
-  
+
   /**
    *  Styles for basemap chooser dialog
    */
@@ -130,9 +130,46 @@
     li {
       padding: 24px 0;
       width: 405px;
+      clear:both; overflow:hidden;
+
+      &.invalid {
+        .button {
+          margin: 4px 0 0 0;
+        }
+        p {
+          color: #999;
+        }
+        strong {
+          margin: 0 0 3px 0;
+          color: #999;
+        }
+      }
+
     }
 
-    strong { line-height: 29px; }
+    .button {
+      float: right;
+    }
+
+    .msg {
+      display:block;
+      float:left;
+
+      strong {
+        @include inline-block();
+        margin: 5px 0 3px 0;
+        width: 300px;
+        line-height: normal;
+        @include ellipsis();
+      }
+
+      p {
+        font-size: 12px;
+        color: #666;
+        width: 300px;
+      }
+
+    }
 
     .scroll {
       position:absolute;
