@@ -73,7 +73,7 @@ describe Proxy do
     it 'returns available layers' do
       proxy = Proxy.new(@url, @xml)
       proxy.run
-      proxy.layers.length.must_equal 3
+      proxy.layers.length.must_equal 4
 
       url = "http://www2.demis.nl/worldmap/wms.asp?request=GetCapabilities&version=1.0.0"
       proxy = Proxy.new(url)
