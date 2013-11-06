@@ -52,10 +52,17 @@ module CartoDB
           { 
             name:           (name.text if name),
             title:          (title.text if title),
+            srs:            srs_for_element(element),
             bounding_boxes: bounding_boxes_for(element),
             attribution:    nil
           } 
         }
+      end
+
+      def srs_for_element(element)
+        srs = element.xpath("./SRS").map { |element|
+          element.text
+        }.compact
       end
 
       def bounding_boxes_for(element)
