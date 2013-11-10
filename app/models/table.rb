@@ -420,7 +420,7 @@ class Table < Sequel::Model(:user_tables)
     self.create_default_visualization
     self.send_tile_style_request
 
-    owner.in_database(:as => :superuser).run(%Q{GRANT SELECT ON "#{self.name}" TO #{CartoDB::TILE_DB_USER};})
+    owner.in_database.run(%Q{GRANT SELECT ON "#{self.name}" TO #{CartoDB::TILE_DB_USER};})
     set_default_table_privacy
 
     @force_schema = nil
@@ -1147,7 +1147,7 @@ class Table < Sequel::Model(:user_tables)
 
   def set_trigger_the_geom_webmercator
     return true unless self.schema(:reload => true).flatten.include?(THE_GEOM)
-    owner.in_database(:as => :superuser) do |user_database|
+    owner.in_database do |user_database|
       user_database.run(<<-TRIGGER
         DROP TRIGGER IF EXISTS update_the_geom_webmercator_trigger ON "#{self.name}";
         CREATE OR REPLACE FUNCTION update_the_geom_webmercator() RETURNS trigger AS $update_the_geom_webmercator_trigger$
@@ -1168,7 +1168,7 @@ class Table < Sequel::Model(:user_tables)
   end
 
   def set_trigger_update_updated_at
-    owner.in_database(:as => :superuser).run(<<-TRIGGER
+    owner.in_database.run(<<-TRIGGER
       DROP TRIGGER IF EXISTS update_updated_at_trigger ON "#{self.name}";
 
       CREATE OR REPLACE FUNCTION update_updated_at() RETURNS TRIGGER AS $update_updated_at_trigger$
@@ -1255,7 +1255,7 @@ TRIGGER
     # probability factor of running the check for each row
     # (it'll always run before each statement)
     check_probability_factor = 0.001 # TODO: base on database usage ?
-    owner.in_database(:as => :superuser).run(<<-TRIGGER
+    owner.in_database.run(<<-TRIGGER
     DROP TRIGGER IF EXISTS test_quota ON "#{self.name}";
     CREATE TRIGGER test_quota BEFORE UPDATE OR INSERT ON "#{self.name}"
       EXECUTE PROCEDURE CDB_CheckQuota(1, #{self.owner.quota_in_bytes});
