@@ -450,9 +450,9 @@ class Table < Sequel::Model(:user_tables)
         update_table_pg_stats
 
         # Set default triggers
-        add_python
+        #add_python
         set_trigger_update_updated_at
-        set_trigger_cache_timestamp
+        #set_trigger_cache_timestamp
         set_trigger_check_quota
       rescue => e
         self.handle_creation_error(e)
@@ -507,10 +507,10 @@ class Table < Sequel::Model(:user_tables)
   #
   def send_tile_style_request(data_layer=nil)
     data_layer ||= self.map.data_layers.first
-    tile_request('POST', "/tiles/#{self.name}/style?map_key=#{owner.get_map_key}", {
-      'style_version' => data_layer.options["style_version"],
-      'style'         => data_layer.options["tile_style"]
-    })
+    #tile_request('POST', "/tiles/#{self.name}/style?map_key=#{owner.get_map_key}", {
+    #  'style_version' => data_layer.options["style_version"],
+    #  'style'         => data_layer.options["tile_style"]
+    #})
   rescue => exception
     raise exception if Rails.env.production? || Rails.env.staging?
   end

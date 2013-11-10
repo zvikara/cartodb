@@ -142,7 +142,7 @@ namespace :cartodb do
       user.tables.all.each do |table|
       
         # reset quota trigger
-        table.add_python
+        #table.add_python
         table.set_trigger_check_quota
       end  
       
