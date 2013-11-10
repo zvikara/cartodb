@@ -199,7 +199,7 @@ class User < Sequel::Model
     elsif user == :public_user
       ::Rails::Sequel.configuration.environment_for(Rails.env).merge(
         'database' => self.database_name, :logger => logger,
-        'username' => CartoDB::PUBLIC_DB_USER, 'password' => ''
+        'username' => CartoDB::PUBLIC_DB_USER, 'password' => CartoDB::PUBLIC_DB_USER_PASSWORD
       )
     else
       ::Rails::Sequel.configuration.environment_for(Rails.env).merge(
