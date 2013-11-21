@@ -31,12 +31,14 @@ CartoDB::Application.configure do
   # config.middleware.use Rack::ReverseProxy do
   #  reverse_proxy /api\/v1\/sql(.*)/, 'http://vizzuality.localhost.lan:8080/api/v1/sql$1'
   # end
+
+  config.assets.enabled = false
   
   # Do not compress assets
-  config.assets.compress = false
+  # config.assets.compress = false
   
   # Expands the lines which load the assets
-  config.assets.debug = true
+  # config.assets.debug = true
 
   # Add non-conventional classes to autoload path
   config.autoload_paths += ["#{config.root}/app/models/visualization"]
@@ -47,7 +49,7 @@ CartoDB::Application.configure do
   config.autoload_paths += ["#{config.root}/app/models/table"]
   config.autoload_paths += ["#{config.root}/app/models/user"]
   
-  config.assets.initialize_on_precompile = true
+  # config.assets.initialize_on_precompile = true
 
   # config.action_controller.asset_host = Proc.new { Cartodb.config[:app_assets] ? Cartodb.config[:app_assets]['asset_host'] : nil }
 end
