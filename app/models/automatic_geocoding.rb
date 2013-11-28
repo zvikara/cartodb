@@ -3,8 +3,8 @@ class AutomaticGeocoding < Sequel::Model
 
   MAX_RETRIES = 5
 
-  many_to_one :table
-  one_to_many :geocodings, order: :created_at
+  #many_to_one :table
+  #one_to_many :geocodings, order: :created_at
 
   def self.active
     AutomaticGeocoding.where("state IN ?", ['created', 'idle']).all.select do |ag|

@@ -5,7 +5,7 @@ class Geocoding < Sequel::Model
 
   many_to_one :user
   many_to_one :table
-  many_to_one :automatic_geocoding
+  #many_to_one :automatic_geocoding
 
   attr_reader :table_geocoder
 
@@ -67,7 +67,7 @@ class Geocoding < Sequel::Model
     end until ['completed', 'cancelled', 'failed'].include? state
     return false if state == 'cancelled'
     table_geocoder.process_results
-    create_automatic_geocoding if automatic_geocoding_id.blank?
+    #create_automatic_geocoding if automatic_geocoding_id.blank?
     self.update(state: 'finished')
   rescue => e
     CartoDB::notify_exception(e, user: user)
