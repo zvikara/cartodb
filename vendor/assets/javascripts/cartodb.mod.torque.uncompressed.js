@@ -6454,7 +6454,7 @@ exports.Profiler = Profiler;
       // tiler needs map_key instead of api_key
       // so replace it
       if (extra) {
-        extra = extra.replace('api_key=', 'map_key=');
+        //extra = extra.replace('api_key=', 'map_key=');
       }
 
       url = url +
@@ -9071,7 +9071,7 @@ var GMapsTorqueLayerView = function(layerModel, gmapsMap) {
       sql: layerModel.get('query'),
       visible: layerModel.get('visible'),
       extra_params: {
-        api_key: extra ? extra.map_key: ''
+        api_key: extra ? extra.api_key: ''
       },
       map: gmapsMap,
       cartodb_logo: layerModel.get('cartodb_logo'),
@@ -9157,7 +9157,7 @@ var LeafLetTorqueLayer = L.TorqueLayer.extend({
       sql: layerModel.get('query'),
       visible: layerModel.get('visible'),
       extra_params: {
-        api_key: extra ? extra.map_key: ''
+        api_key: extra ? extra.api_key: ''
       },
       cartodb_logo: layerModel.get('cartodb_logo'),
       cdn_url: layerModel.get('no_cdn') ? null: (layerModel.get('cdn_url') || cdb.CDB_HOST)

@@ -1,6 +1,6 @@
 // cartodb.js version: 3.4.02-dev
 // uncompressed version: cartodb.uncompressed.js
-// sha: a4c64c3bca0c2e2224da6db6da772df9a9258829
+// sha: 8c21e3f4c0f92ead043bd20f09bf83cc2fcb5447
 (function() {
   var root = this;
 
@@ -24863,7 +24863,7 @@ LayerDefinition.prototype = {
     var extra_params = this.options.extra_params || {};
     var api_key = this.options.map_key || this.options.api_key || extra_params.map_key || extra_params.api_key;
     if(api_key) {
-      params.push("map_key=" + api_key);
+      params.push("api_key=" + api_key);
     }
     // mark as the request is being done
     this._waiting = true;
