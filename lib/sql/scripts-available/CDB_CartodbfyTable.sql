@@ -318,7 +318,7 @@ BEGIN
   -- TODO: why _before_ and not after ?
   sql := 'DROP TRIGGER IF EXISTS update_the_geom_webmercator_trigger ON ' || reloid::text;
   EXECUTE sql;
-  sql := 'CREATE trigger update_the_geom_webmercator_trigger BEFORE INSERT OR UPDATE ON '
+  sql := 'CREATE trigger update_the_geom_webmercator_trigger BEFORE INSERT OR UPDATE OF the_geom ON '
       || reloid::text
       || ' FOR EACH ROW EXECUTE PROCEDURE public._CDB_update_the_geom_webmercator()';
   EXECUTE sql;
