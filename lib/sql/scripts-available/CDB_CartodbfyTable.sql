@@ -40,6 +40,26 @@ DECLARE
   exists_geom_cols BOOLEAN[];
 BEGIN
 
+  -- Drop cartodb triggers (might prevent changing columns)
+
+  -- "track_updates"
+  sql := 'DROP TRIGGER IF EXISTS track_updates ON ' || reloid::text;
+  EXECUTE sql;
+
+  -- "update_the_geom_webmercator"
+  sql := 'DROP TRIGGER IF EXISTS update_the_geom_webmercator_trigger ON ' || reloid::text;
+  EXECUTE sql;
+
+  -- "update_updated_at"
+  sql := 'DROP TRIGGER IF EXISTS update_updated_at_trigger ON ' || reloid::text;
+  EXECUTE sql;
+
+  -- "test_quota" and "test_quota_per_row"
+  sql := 'DROP TRIGGER IF EXISTS test_quota ON ' || reloid::text;
+  EXECUTE sql;
+  sql := 'DROP TRIGGER IF EXISTS test_quota_per_row ON ' || reloid::text;
+  EXECUTE sql;
+
   -- Ensure required fields exist
 
   -- We need a cartodb_id column
@@ -307,8 +327,6 @@ BEGIN
   -- NOTE: drop/create has the side-effect of re-enabling disabled triggers
 
   -- "track_updates"
-  sql := 'DROP TRIGGER IF EXISTS track_updates ON ' || reloid::text;
-  EXECUTE sql;
   sql := 'CREATE trigger track_updates AFTER INSERT OR UPDATE OR DELETE OR TRUNCATE ON '
       || reloid::text
       || ' FOR EACH STATEMENT EXECUTE PROCEDURE public.cdb_tablemetadata_trigger()';
@@ -316,8 +334,6 @@ BEGIN
 
   -- "update_the_geom_webmercator"
   -- TODO: why _before_ and not after ?
-  sql := 'DROP TRIGGER IF EXISTS update_the_geom_webmercator_trigger ON ' || reloid::text;
-  EXECUTE sql;
   sql := 'CREATE trigger update_the_geom_webmercator_trigger BEFORE INSERT OR UPDATE OF the_geom ON '
       || reloid::text
       || ' FOR EACH ROW EXECUTE PROCEDURE public._CDB_update_the_geom_webmercator()';
@@ -325,8 +341,6 @@ BEGIN
 
   -- "update_updated_at"
   -- TODO: why _before_ and not after ?
-  sql := 'DROP TRIGGER IF EXISTS update_updated_at_trigger ON ' || reloid::text;
-  EXECUTE sql;
   sql := 'CREATE trigger update_updated_at_trigger BEFORE UPDATE ON '
       || reloid::text
       || ' FOR EACH ROW EXECUTE PROCEDURE public._CDB_update_updated_at()';
@@ -336,22 +350,19 @@ BEGIN
 
   SELECT public._CDB_UserQuotaInBytes() INTO quota_in_bytes;
 
-  sql := 'DROP TRIGGER IF EXISTS test_quota ON ' || reloid::text;
-  EXECUTE sql;
   sql := 'CREATE TRIGGER test_quota BEFORE UPDATE OR INSERT ON '
       || reloid::text
       || ' EXECUTE PROCEDURE public.CDB_CheckQuota(1, '
       || quota_in_bytes || ')';
   EXECUTE sql;
 
-  sql := 'DROP TRIGGER IF EXISTS test_quota_per_row ON ' || reloid::text;
-  EXECUTE sql;
   sql := 'CREATE TRIGGER test_quota_per_row BEFORE UPDATE OR INSERT ON '
       || reloid::text
       || ' FOR EACH ROW EXECUTE PROCEDURE public.CDB_CheckQuota(0.001,'
       || quota_in_bytes || ')';
   EXECUTE sql;
  
+  -- Enable user triggers
 
 END;
 $$ LANGUAGE PLPGSQL;
