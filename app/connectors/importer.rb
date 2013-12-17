@@ -20,6 +20,7 @@ module CartoDB
         runner.run(&tracker)
 
         if quota_checker.will_be_over_table_quota?(results.length)
+          self.aborted = true
           drop(results)
         else
           results.select(&:success?).each { |result| register(result) }
@@ -30,12 +31,13 @@ module CartoDB
 
       def register(result)
         name = rename(result.table_name, result.name)
-        move_to_schema(name, result.schema, DESTINATION_SCHEMA)
-        #persist_metadata(name, data_import_id)
+        move_to_schema(name, ORIGIN_SCHEMA, DESTINATION_SCHEMA)
+        persist_metadata(name, data_import_id)
+      rescue => exception
       end
 
       def success?
-        !quota_checker.over_table_quota? && runner.success?
+        !over_table_quota? && runner.success?
       end
 
       def drop_all(results)
@@ -48,12 +50,11 @@ module CartoDB
         self
       end
 
-      def move_to_schema(name, origin_schema,
-      destination_schema=DESTINATION_SCHEMA)
+      def move_to_schema(table_name, origin_schema, destination_schema)
         return self if origin_schema == destination_schema
         database.execute(%Q{
-          ALTER TABLE "#{origin_schema}"."#{name}"
-          SET SCHEMA "#{DESTINATION_SCHEMA}"
+          ALTER TABLE "#{origin_schema}"."#{table_name}"
+          SET SCHEMA #{destination_schema}
         })
       end
 
@@ -64,7 +65,7 @@ module CartoDB
         )
       
         database.execute(%Q{
-          ALTER TABLE "#{schema}"."#{current_name}"
+          ALTER TABLE "#{ORIGIN_SCHEMA}"."#{current_name}"
           RENAME TO "#{new_name}"
         })
         new_name
@@ -83,15 +84,20 @@ module CartoDB
         runner.results
       end 
 
+      def over_table_quota?
+        aborted || quota_checker.over_table_quota?
+      end
+
       def error_code
-        return 8002 if quota_checker.over_table_quota?
+        return 8002 if over_table_quota?
         results.map(&:error_code).compact.first
-      end #errors_from
+      end
 
       private
 
       attr_reader :runner, :table_registrar, :quota_checker, :database,
       :data_import_id, :user
+      attr_accessor :aborted
     end # Importer
   end # Connector
 end # CartoDB
