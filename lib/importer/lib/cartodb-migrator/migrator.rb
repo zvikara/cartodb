@@ -60,7 +60,10 @@ module CartoDB
 
       # Rename our table
       if @current_name != @suggested_name
-        @db_connection.run("ALTER TABLE #{@current_name} RENAME TO #{@suggested_name}")
+        @db_connection.run(%Q{
+          ALTER TABLE "#{@current_name}"
+          RENAME TO "#{@suggested_name}"
+        })
         @current_name = @suggested_name
       end
 
@@ -72,13 +75,20 @@ module CartoDB
       # attempt to transform the_geom to 4326
       if column_names.include? "the_geom"
         begin
-          if srid = @db_connection["select st_srid(the_geom) from #{@suggested_name} limit 1"].first
+          if srid = @db_connection[%Q{
+            select st_srid(the_geom)
+            from "#{@suggested_name}
+            limit 1
+          }].first
             srid = srid[:st_srid] if srid.is_a?(Hash)
             begin
               if srid.to_s != "4326"
                 #@data_import.log << ("Transforming the_geom from #{srid} to 4326")
                 # move original geometry column around
-                @db_connection.run("UPDATE #{@suggested_name} SET the_geom = ST_Transform(the_geom, 4326);")
+                @db_connection.run(%Q{
+                  UPDATE "#{@suggested_name}"
+                  SET the_geom = ST_Transform(the_geom, 4326)
+                })
                 #@db_connection.run("CREATE INDEX #{@suggested_name}_the_geom_gist ON #{@suggested_name} USING GIST (the_geom)")
               end
             rescue => e
@@ -90,7 +100,10 @@ module CartoDB
           #@data_import.log << ("Failed to process the_geom renaming to invalid_the_geom. #{e.inspect}")
           # if no SRID or invalid the_geom, we need to remove it from the table
           begin
-            @db_connection.run("ALTER TABLE #{@suggested_name} RENAME COLUMN the_geom TO invalid_the_geom")
+            @db_connection.run(%Q{
+              ALTER TABLE "#{@suggested_name}"
+              RENAME COLUMN the_geom TO invalid_the_geom
+            })
             column_names.delete("the_geom")
           rescue => exception
           end
@@ -120,7 +133,9 @@ module CartoDB
         if matching_latitude and matching_longitude
             #@data_import.log << ("converting #{matching_latitude}, #{matching_latitude} to the_geom")
             #we know there is a latitude/longitude columns
-            @db_connection.run("SELECT AddGeometryColumn('#{@suggested_name}','the_geom',4326, 'POINT', 2);")
+            @db_connection.run(%Q{
+              SELECT AddGeometryColumn('#{@suggested_name}','the_geom',4326, 'POINT', 2)
+            })
 
             @db_connection.run(<<-GEOREF
             UPDATE \"#{@suggested_name}\"
@@ -140,7 +155,9 @@ module CartoDB
 
       @table_created = true
       #@data_import.log << ("table created")
-      rows_imported = @db_connection["SELECT count(*) as count from #{@suggested_name}"].first[:count]
+      rows_imported = @db_connection[%Q{
+        SELECT count(*) as count from "#{@suggested_name}"
+      }].first[:count]
 
       payload = OpenStruct.new({
                               :name => @suggested_name,
@@ -201,7 +218,7 @@ module CartoDB
 
       sanitization_map.each do |unsanitized, sanitized|
         @db_connection.run(%Q{
-          ALTER TABLE #{@current_name}
+          ALTER TABLE "#{@current_name}"
           RENAME COLUMN "#{unsanitized}"
           TO "#{sanitized}"
         })

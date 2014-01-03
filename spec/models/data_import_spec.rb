@@ -126,6 +126,16 @@ describe DataImport do
     table.records[:rows].should have(10).items
   end
 
+  it 'imports a file with a SQL word as name' do
+    data_import = DataImport.create(
+      :user_id       => @user.id,
+      :data_source   => '/../db/fake_data/all.csv',
+      :updated_at    => Time.now
+    ).run_import!
+
+    puts data_import.log
+  end
+
   it 'imports a simple file with latlon' do
     data_import = DataImport.create(
       :user_id       => @user.id,

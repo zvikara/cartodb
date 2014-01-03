@@ -775,8 +775,10 @@ class Table < Sequel::Model(:user_tables)
         raise CartoDB::InvalidAttributes, "Invalid rows: #{(raw_attributes.keys - attributes.keys).join(',')}"
       end
       begin
-        primary_key = user_database.from(name).insert(make_sequel_compatible(attributes))
+        puts make_sequel_compatible(attributes)
+        primary_key = user_database.from(name.to_sym).insert(make_sequel_compatible(attributes))
       rescue Sequel::DatabaseError => e
+        puts "Raising ====== #{e.inspect}"
         message = e.message.split("\n")[0]
         raise message if message =~ /Quota exceeded by/
 
@@ -792,6 +794,7 @@ class Table < Sequel::Model(:user_tables)
           end
         end
 
+        puts '==== about to get new column type'
         new_column_type = get_new_column_type(invalid_column)
           
         if invalid_column.nil?
