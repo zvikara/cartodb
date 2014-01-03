@@ -55,14 +55,13 @@ class Table < Sequel::Model(:user_tables)
   end
 
   def geometry_types
-    owner.in_database[<<-SQL
+    owner.in_database[%Q{
       SELECT DISTINCT ST_GeometryType(the_geom) FROM (
         SELECT the_geom
-        FROM #{self.name}
+        FROM "#{self.name}"
         WHERE (the_geom is not null) LIMIT 10
       ) as foo
-    SQL
-    ].all.map {|r| r[:st_geometrytype] }
+    }].all.map {|r| r[:st_geometrytype] }
   end
 
   def_dataset_method(:search) do |query|
@@ -775,10 +774,8 @@ class Table < Sequel::Model(:user_tables)
         raise CartoDB::InvalidAttributes, "Invalid rows: #{(raw_attributes.keys - attributes.keys).join(',')}"
       end
       begin
-        puts make_sequel_compatible(attributes)
         primary_key = user_database.from(name.to_sym).insert(make_sequel_compatible(attributes))
       rescue Sequel::DatabaseError => e
-        puts "Raising ====== #{e.inspect}"
         message = e.message.split("\n")[0]
         raise message if message =~ /Quota exceeded by/
 
@@ -794,7 +791,6 @@ class Table < Sequel::Model(:user_tables)
           end
         end
 
-        puts '==== about to get new column type'
         new_column_type = get_new_column_type(invalid_column)
           
         if invalid_column.nil?
@@ -1031,7 +1027,7 @@ class Table < Sequel::Model(:user_tables)
       end
       # If we force to get the name from an schema, we avoid the problem of having as
       # table name a reserved word, such 'as'
-      row = user_database["SELECT #{select} FROM public.#{name} WHERE cartodb_id = #{identifier}"].first
+      row = user_database[%Q(SELECT #{select} FROM "public"."#{name}" WHERE cartodb_id = #{identifier})].first
     end
     raise if row.nil?
     row
@@ -1391,7 +1387,10 @@ TRIGGER
     if type.nil?
       if self.schema(:reload => true).flatten.include?(THE_GEOM)
         if self.schema.select{ |k| k[0] == THE_GEOM }.first[1] == "geometry"
-          if row = owner.in_database["select GeometryType(#{THE_GEOM}) FROM #{self.name} where #{THE_GEOM} is not null limit 1"].first
+          if row = owner.in_database[%Q(
+            select GeometryType(#{THE_GEOM}) FROM
+            "#{self.name}" where #{THE_GEOM} is not null limit 1
+          )].first
             type = row[:geometrytype]
           else
             type = DEFAULT_THE_GEOM_TYPE
@@ -1427,7 +1426,11 @@ TRIGGER
         user_database.run(%Q{UPDATE "#{self.name}" SET the_geom_simple = ST_Multi(the_geom);})
         user_database.run("SELECT DropGeometryColumn('#{self.name}','the_geom');");
         user_database.run(%Q{ALTER TABLE "#{self.name}" RENAME COLUMN the_geom_simple TO the_geom;})
-        type = owner.in_database["select GeometryType(#{THE_GEOM}) FROM #{self.name} where #{THE_GEOM} is not null limit 1"].first[:geometrytype]
+        type = owner.in_database[%Q(
+          select GeometryType(#{THE_GEOM})
+          FROM #{self.name}
+          where #{THE_GEOM} is not null limit 1
+        )].first[:geometrytype]
       end
     end
 

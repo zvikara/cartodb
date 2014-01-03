@@ -152,7 +152,7 @@ module CartoDB
       end #wrap
 
       def default_query_for(options)
-        "select * from #{options.fetch('table_name')}"
+        %Q(select * from "#{options.fetch('table_name')}")
       end #defaut_query_for
 
       def public_options

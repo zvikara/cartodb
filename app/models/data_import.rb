@@ -210,7 +210,7 @@ class DataImport < Sequel::Model
       raise_over_table_quota_error 
     end
 
-    query = table_copy ? "SELECT * FROM #{table_copy}" : from_query
+    query = table_copy ? %Q(SELECT * FROM "#{table_copy}") : from_query
     new_table_name = import_from_query(table_name, query)
     self.update(table_names: new_table_name)
     migrate_existing(new_table_name)
@@ -231,11 +231,11 @@ class DataImport < Sequel::Model
 
     candidates =  current_user.tables.select_map(:name)
     table_name = Table.get_valid_table_name(name, name_candidates: candidates)
-    current_user.in_database.run(%Q{CREATE TABLE #{table_name} AS #{query}})
+    current_user.in_database.run(%Q{CREATE TABLE "#{table_name}" AS #{query}})
     if current_user.over_disk_quota?
       log.append "Over storage quota"
       log.append "Dropping table #{table_name}"
-      current_user.in_database.run(%Q{DROP TABLE #{table_name}})
+      current_user.in_database.run(%Q{DROP TABLE "#{table_name}"})
       self.error_code = 8001
       self.state      = 'failure'
       save

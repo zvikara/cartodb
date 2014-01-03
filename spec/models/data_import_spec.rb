@@ -133,7 +133,9 @@ describe DataImport do
       :updated_at    => Time.now
     ).run_import!
 
-    puts data_import.log
+    table = Table[data_import.table_id]
+    table.should_not be_nil
+    table.name.should be == 'all'
   end
 
   it 'imports a simple file with latlon' do

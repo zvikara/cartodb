@@ -46,7 +46,7 @@ module CartoDB
       end
 
       def drop(table_name)
-        database.execute(%Q(DROP TABLE #{table_name}))
+        database.execute(%Q(DROP TABLE "#{table_name}"))
       rescue
         self
       end

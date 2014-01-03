@@ -63,7 +63,13 @@ module CartoDB
         table.save
         table.send(:invalidate_varnish_cache)
         update_cdb_tablemetadata(table.name)
-        database.run("UPDATE #{table_name} SET updated_at = NOW() WHERE cartodb_id IN (SELECT MAX(cartodb_id) from #{table_name})")
+        database.run(%Q(
+          UPDATE "#{table_name}"
+          SET updated_at = NOW()
+          WHERE cartodb_id IN (
+            SELECT MAX(cartodb_id) FROM "#{table_name}"
+          )
+        ))
       rescue => exception
         stacktrace = exception.to_s + exception.backtrace.join
         puts stacktrace
@@ -116,7 +122,7 @@ module CartoDB
       end
 
       def drop(table_name)
-        database.execute(%Q(DROP TABLE #{table_name}))
+        database.execute(%Q(DROP TABLE "#{table_name}"))
       rescue
         self
       end
