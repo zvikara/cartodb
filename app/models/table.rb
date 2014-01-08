@@ -1562,6 +1562,16 @@ SQL
     puts exception.backtrace.join("\n")
   end
 
+  def rename_sequence(old_name, new_name)
+    owner.in_database.run(%Q(
+      ALTER SEQUENCE #{old_name}_seq
+      RENAME TO #{new_name}_seq
+    ))
+  rescue => exception
+    puts exception.to_s
+    puts exception.backtrace.join("\n")
+  end
+
   def update_name_changes
     if @name_changed_from.present? && @name_changed_from != name
       # update metadata records
@@ -1580,6 +1590,7 @@ SQL
       end
 
       rename_indexes(@name_changed_from, name)
+      rename_sequence(@name_changed_from, name)
       # update tile styles
       begin
         # get old tile style
