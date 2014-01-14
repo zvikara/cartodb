@@ -65,7 +65,7 @@ GEM
     asset_sync (1.0.0)
       activemodel
       fog (>= 1.8.0)
-    aws-sdk (1.8.5)
+    aws-sdk (1.32.0)
       json (~> 1.4)
       nokogiri (>= 1.4.4)
       uuidtools (~> 2.1)
@@ -364,7 +364,7 @@ DEPENDENCIES
   addressable (= 2.2.8)
   aequitas (= 0.0.2)
   asset_sync (~> 1.0.0)
-  aws-sdk (= 1.8.5)
+  aws-sdk (= 1.32.0)
   bartt-ssl_requirement (~> 1.4.0)
   builder (= 3.0.0)
   capybara (= 1.1.2)

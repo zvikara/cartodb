@@ -22,7 +22,7 @@ gem "redis",                   "2.2.2"
 gem "yajl-ruby",               "1.1.0", require: "yajl"
 gem "nokogiri",                "1.6.0"
 gem "statsd-client",           "0.0.7", require: "statsd"
-gem "aws-sdk",                 "1.8.5"
+gem "aws-sdk",                 "1.32.0"
 
 gem "addressable",             "2.2.8", require: "addressable/uri"
 
