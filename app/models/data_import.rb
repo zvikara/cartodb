@@ -213,6 +213,7 @@ class DataImport < Sequel::Model
 
     query = table_copy ? "SELECT * FROM #{table_copy}" : from_query
     new_table_name = import_from_query(table_name, query)
+    self.table_name = new_table_name
     self.update(table_names: new_table_name)
     migrate_existing(new_table_name)
     self.results.push CartoDB::Importer2::Result.new(success: true, error: nil)
