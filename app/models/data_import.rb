@@ -12,6 +12,7 @@ require_relative '../../services/track_record/track_record/log'
 require_relative '../../config/initializers/redis'
 require_relative '../../services/importer/lib/importer'
 require_relative '../connectors/importer'
+require_relative '../connectors/appender'
 
 class DataImport < Sequel::Model
   REDIS_LOG_KEY_PREFIX          = 'importer'
@@ -140,6 +141,7 @@ class DataImport < Sequel::Model
   attr_writer :results, :log
 
   def dispatch
+    return appender           if append
     return migrate_existing   if migrate_table.present?
     return from_table         if table_copy.present? || from_query.present?
     new_importer       
@@ -284,6 +286,33 @@ class DataImport < Sequel::Model
         host:     current_user.database_host
       ) {|key, o, n| n.nil? || n.empty? ? o : n}
   end #pg_options
+
+  def appender
+    unless table_id
+      self.table_id = ::Table.find_by_identifier(current_user.id, table_name).id
+    end
+
+    tracker       = lambda { |state| self.state = state; save }
+    downloader    = CartoDB::Importer2::Downloader.new(data_source)
+    runner        = CartoDB::Importer2::Runner.new(
+                      pg_options, downloader, log, current_user.remaining_quota
+                    )
+    quota_checker = CartoDB::QuotaChecker.new(current_user)
+    database      = current_user.in_database
+    appender      = CartoDB::Connector::Appender.new(
+                      runner, quota_checker, database, id, table_id
+                    )
+    appender.run(tracker)
+    self.results    = appender.results
+    self.error_code = appender.error_code
+
+    appender.success?
+  rescue => exception
+    puts exception.to_s + exception.backtrace.join("\n")
+    self.state = 'failure'
+    self.error_code = 8005
+    false
+  end
 
   def new_importer
     tracker       = lambda { |state| self.state = state; save }
