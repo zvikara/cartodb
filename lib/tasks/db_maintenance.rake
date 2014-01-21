@@ -18,6 +18,20 @@ namespace :cartodb do
       end
     end
 
+    desc "Copy user api_keys from redis to postgres"
+    task :copy_api_keys_from_redis => :environment do
+      count = User.count
+      User.all.each_with_index do |user, i|
+        begin
+          user.this.update api_key: $users_metadata.HGET(user.key, 'map_key')
+          raise "No API key!!" if user.reload.api_key.blank?
+          puts "(#{i+1} / #{count}) OK   #{user.username}"
+        rescue => e
+          puts "(#{i+1} / #{count}) FAIL #{user.username} #{e.message}"
+        end
+      end
+    end # copy_api_keys_from_redis
+
     desc "Rebuild user tables/layers join table"
     task :register_table_dependencies => :environment do
       count = Map.count
@@ -54,6 +68,22 @@ namespace :cartodb do
       end
     end
 
+    desc "Load varnish invalidation function"
+    task :load_varnish_invalidation_function => :environment do
+      count = User.count
+      printf "Starting cartodb:db:load_varnish_invalidation_function task for %d users\n", count
+      User.all.each_with_index do |user, i|
+        begin
+          user.create_function_invalidate_varnish
+          printf "OK %-#{20}s (%-#{4}s/%-#{4}s)\n", user.username, i+1, count
+        rescue => e
+          printf "FAIL %-#{20}s (%-#{4}s/%-#{4}s) #{e.message}\n", user.username, i+1, count
+        end
+        #sleep(1.0/5.0)
+      end
+    end
+
+
     ########################
     # LOAD CARTODB TRIGGERS
     ########################
@@ -64,10 +94,8 @@ namespace :cartodb do
         begin
           user.tables.all.each do |table|
             begin
-              table.add_python
-              table.set_trigger_check_quota
-              table.set_trigger_update_updated_at
-              table.set_trigger_cache_timestamp
+              # set triggers
+              table.set_triggers
             rescue => e
               puts e
               next
@@ -101,10 +129,7 @@ namespace :cartodb do
           end
           
           # reset triggers
-          table.add_python
-          table.set_trigger_update_updated_at
-          table.set_trigger_cache_timestamp
-          table.set_trigger_check_quota
+          table.set_triggers
         end  
       end
     end
@@ -117,6 +142,7 @@ namespace :cartodb do
       count = User.count
       User.all.each_with_index do |user, i|
         # rebuild quota trigger
+        # (or should triggers actually be replaced ?)
         user.rebuild_quota_trigger
       end
     end
@@ -129,7 +155,7 @@ namespace :cartodb do
       user  = User.filter(:username => args[:username]).first
       quota = args[:quota_in_mb].to_i * 1024 * 1024
       user.update(:quota_in_bytes => quota)
-              
+      
       # rebuild quota trigger
       user.rebuild_quota_trigger
       
@@ -348,6 +374,13 @@ namespace :cartodb do
       require Rails.root.join("lib/cartodb/generic_migrator.rb")
 
       CartoDB::GenericMigrator.new(args[:version]).rollback!
+    end
+    
+    desc "Save users metadata in redis"
+    task :save_users_metadata => :environment do
+      User.all.each do |u|
+        u.save_metadata
+      end
     end
 
   end

@@ -18,25 +18,35 @@ class Api::Json::VisualizationsController < Api::ApplicationController
   before_filter :link_ghost_tables, only: [:index, :show]
 
   def index
-    collection      = Visualization::Collection.new.fetch(
-                        params.dup.merge(scope_for(current_user))
-                      )
-    map_ids         = collection.map(&:map_id).to_a
-    tables          = tables_by_map_id(map_ids)
+    collection       = Visualization::Collection.new.fetch(
+                         params.dup.merge(scope_for(current_user))
+                       )
+    map_ids          = collection.map(&:map_id).to_a
+    tables           = tables_by_map_id(map_ids)
+    table_names      = tables.values.map { |t| t.name }
+    synchronizations = synchronizations_by_table_name(table_names)
+    rows_and_sizes   = rows_and_sizes_for(table_names)
 
     representation  = collection.map { |member|
-      member.to_hash(
-        related:    false,
-        table_data: !(params[:table_data] =~ /false/),
-        user:       current_user,
-        table:      tables[member.map_id]
-      )
-    }
+      begin
+        member.to_hash(
+          related:    false,
+          table_data: !(params[:table_data] =~ /false/),
+          user:       current_user,
+          table:      tables[member.map_id],
+          synchronization: synchronizations[member.name],
+          rows_and_sizes: rows_and_sizes
+        )
+      rescue => exception
+        puts exception.to_s + exception.backtrace.join("\n")
+      end
+    }.compact
 
     response        = {
       visualizations: representation,
       total_entries:  collection.total_entries
     }
+    current_user.update_visualization_metrics
     render_jsonp(response)
   end #index
 
@@ -50,7 +60,7 @@ class Api::Json::VisualizationsController < Api::ApplicationController
                   ).copy
     elsif params[:tables]
       tables    = params[:tables].map do |table_name| 
-                    ::Table.find_by_subdomain(request.subdomain, table_name)
+                    ::Table.find_by_subdomain(CartoDB.extract_subdomain(request), table_name)
                   end
       blender   = Visualization::TableBlender.new(current_user, tables)
       map       = blender.blend
@@ -72,6 +82,7 @@ class Api::Json::VisualizationsController < Api::ApplicationController
     collection  = Visualization::Collection.new.fetch
     collection.add(member)
     collection.store
+    current_user.update_visualization_metrics
     render_jsonp(member)
   rescue CartoDB::InvalidMember => exception
     render_jsonp({ errors: member.full_errors }, 400)
@@ -101,8 +112,8 @@ class Api::Json::VisualizationsController < Api::ApplicationController
   def destroy
     member = Visualization::Member.new(id: params.fetch('id')).fetch
     return(head 401) unless member.authorize?(current_user)
-
     member.delete
+    current_user.update_visualization_metrics
     return head 204
   rescue KeyError
     head(404)
@@ -117,7 +128,7 @@ class Api::Json::VisualizationsController < Api::ApplicationController
   end #stats
 
   def vizjson1
-    visualization, table = locator.get(params.fetch(:id), request.subdomain)
+    visualization, table = locator.get(params.fetch(:id), CartoDB.extract_subdomain(request))
     return(head 404) unless visualization
     return(head 403) unless allow_vizjson_v1_for?(visualization.table)
     set_vizjson_response_headers_for(visualization)
@@ -130,7 +141,7 @@ class Api::Json::VisualizationsController < Api::ApplicationController
   end #vizjson1
 
   def vizjson2
-    visualization, table = locator.get(params.fetch(:id), request.subdomain)
+    visualization, table = locator.get(params.fetch(:id), CartoDB.extract_subdomain(request))
     return(head 404) unless visualization
     return(head 403) unless allow_vizjson_v2_for?(visualization)
     set_vizjson_response_headers_for(visualization)
@@ -189,6 +200,34 @@ class Api::Json::VisualizationsController < Api::ApplicationController
   def tables_by_map_id(map_ids)
     Hash[
       ::Table.where(map_id: map_ids).map { |table| [table.map_id, table] }
+    ]
+  end
+
+  def synchronizations_by_table_name(table_names)
+    Hash[
+      ::Table.db.fetch(
+        "SELECT * FROM synchronizations WHERE user_id = ? AND name IN ?", 
+        current_user.id,
+        table_names
+      ).all.map { |s| [s[:name], s] }
+    ]
+  end
+
+  def rows_and_sizes_for(table_names)
+    Hash[
+      current_user.in_database.fetch(%Q{
+        SELECT 
+          relname AS table_name,
+          pg_total_relation_size(relname::regclass) AS total_relation_size,
+          reltuples::integer AS reltuples 
+        FROM pg_class
+        WHERE relname IN ?}, table_names
+      ).all.map { |r| 
+        [r[:table_name], {
+          size: r[:total_relation_size].to_i / 2,
+          rows: r[:reltuples]
+        }]
+      }
     ]
   end
 end # Api::Json::VisualizationsController

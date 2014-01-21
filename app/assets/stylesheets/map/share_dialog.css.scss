@@ -1,16 +1,27 @@
 /**
  * share map dialog
  */
-@import "compass";
+@import "compass/css3/box-shadow";
+@import "compass/css3/border-radius";
+@import "compass/css3/inline-block";
+@import "compass/css3/transform";
 @import "../common/vars";
-@import "../common/sprites";
 @import "../common/mixins";
 
 // Map preview
 .share_dialog {
 
-  div.head {
-    padding:30px 40px!important;
+  & > div.head {
+    padding:30px 40px;
+  }
+
+  div.torque_warning {
+    display: none;
+    padding: 13px 40px;
+    background-color: #FCF3DB;
+    font-size: 13px;
+    color: $cGray2;
+    border-bottom: 1px solid #E5E5E5;
   }
 
   .cartodb-map_wrapper {
@@ -50,15 +61,65 @@
       overflow:hidden;
     }
 
+
+    .cartodb-share-dialog {
+
+      section.block.modal {
+        position:absolute;
+        top: 50%;
+        left: 50%;
+        margin-left: -216px;
+        margin-top: -107px;
+
+        @include translateZ(20px);
+
+        .head { padding: 18px 25px; }
+        .head h3  {
+          font: bold 15px "Helvetica", Arial;
+          letter-spacing: 0;
+        }
+
+      }
+
+    }
+
     div.cartodb-header {
-      div.social {display:none; letter-spacing:-4px;}
+
+      div.share {
+        display:none;
+        letter-spacing:-4px;
+        position: absolute;
+        top: 21px;
+        right: 10px;
+
+        a {
+          padding: 6px 7px;
+          color: #397DB8;
+          font-size:10px;
+          font-weight:bold;
+          border-color: #C3C3C3;
+          background-color: #F5F5F5;
+          background: #F5F5F5;
+          @include border-radius(3px);
+          text-transform: uppercase;
+          text-shadow: none;
+
+          line-height: 150%;
+
+          &:hover {
+            background: #E6E6E6;
+          }
+
+        }
+      }
     }
 
     div.cartodb-searchbox {display:none;}
     div.cartodb-zoom {top:0;}
-
+    div.cartodb-layer-selector-box { display:none; font-weight: normal; }
     div.cartodb-legends {
       position:absolute;
+      display:none;
       bottom: 60px;
       right: 20px;
 

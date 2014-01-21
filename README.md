@@ -1,5 +1,8 @@
 # What is CartoDB? #
 
+[![Build Status](http://travis-ci.org/CartoDB/cartodb.png)]
+(http://travis-ci.org/CartoDB/cartodb)
+
 CartoDB is an open source tool that allows for the storage and
 visualization of geospatial data on the web.
 
@@ -12,7 +15,7 @@ If you would like to see some live demos, check out our
 [videos](http://www.vimeo.com/channels/cartodb) on Vimeo.
 We hope you like it!
 
-<img src="http://dl.dropbox.com/u/538411/readmeCartodb/map.png" width="900px"/>
+<img src="http://cartodb.s3.amazonaws.com/github/map.png" width="900px"/>
 
 
 # What can I do with CartoDB? #
@@ -31,8 +34,8 @@ powerful geospatial applications! Definitely check out the [CartoDB
 Maps](http://cartodb.com/maps) gallery for interactive examples
 and code.
 
-<img src="http://dl.dropbox.com/u/538411/readmeCartodb/mapWizard.png" width="900px"/>
-<img src="http://dl.dropbox.com/u/538411/readmeCartodb/tableSQL.png" width="900px"/>
+<img src="http://cartodb.s3.amazonaws.com/github/mapWizard.png" width="900px"/>
+<img src="http://cartodb.s3.amazonaws.com/github/tableSQL.png" width="900px"/>
 
 # What are the components of CartoDB? #
 
@@ -53,11 +56,12 @@ and code.
   - NodeJS 0.8.x
   - CartoDB-SQL-API
   - GEOS 3.3.4
-  - GDAL 1.9.0
+  - GDAL 1.10.x (Starting with CartoDB 2.2.0)
   - PostGIS 2.0.x
   - Mapnik 2.1.1
   - Windshaft-cartodb
-  - Varnish 2.1+
+  - Varnish 2.1+ (WARNING: must be < 3.0!)
+  - ImageMagick 6.6.9+ (for the testsuite)
 
 # How do I install CartoDB? #
 
@@ -80,7 +84,7 @@ Group](https://groups.google.com/forum/#!forum/cartodb)
 If you want to give it a try, download CartoDB by cloning this repository:
 
 ```bash
-$ git clone --recursive https://github.com/CartoDB/cartodb20.git
+$ git clone --recursive https://github.com/CartoDB/cartodb.git
 ```
 
 Or you can just [download the CartoDB zip
@@ -111,6 +115,15 @@ sudo add-apt-repository ppa:cartodb/redis
 Add CartoDB PostgreSQL PPA
 ```bash
 sudo add-apt-repository  ppa:cartodb/postgresql
+```
+Add CartoDB Varnish PPA
+```bash
+sudo add-apt-repository  ppa:cartodb/varnish
+```
+
+Resfresh repositories to use the PPAs
+```bash
+sudo apt-get update
 ```
 
 ## Some dependencies ##
@@ -168,6 +181,21 @@ plpython is required for Python support
 sudo apt-get install postgresql-plpython-9.1
 ```
 
+
+Currently there is an error with credential-based connections for development, and all connections must be performed using method "trust" inside config file `pg_hba.conf`.
+
+```bash
+/etc/postgresql/9.1/main$ sudo vim pg_hba.conf
+```
+
+And change inside all local connections from peer/md5/... to trust.
+
+Then restart postgres and you're done.
+```bash
+sudo /etc/init.d/postgresql restart
+```
+
+
 ## Install PostGIS ##
 [PostGIS](http://postgis.refractions.net) is
 the geospatial extension that allows PostgreSQL to support geospatial
@@ -184,7 +212,7 @@ make install
 ```
 
 Finally, CartoDB depends on a geospatial database template named
-`template_postgis`. In the example script below, make sure that the
+`template_postgis`. In the example script below (can be saved for examples as `template_postgis.sh`), make sure that the
 path to each SQL file is correct:
 
 ```bash
@@ -203,17 +231,42 @@ psql -d template_postgis -c "GRANT ALL ON geometry_columns TO PUBLIC;"
 psql -d template_postgis -c "GRANT ALL ON spatial_ref_sys TO PUBLIC;"
 ```
 
+Before executing the script, change to the postgres user:
+```bash
+sudo su - postgres
+./template_postgis.sh
+```
+
 ## Install Ruby ##
 We implemented CartoDB in the [Ruby](http://ruby-lang.org) programming language,
-so you'll need to install Ruby 1.9.2.
+so you'll need to install Ruby 1.9.2. You can use rvm:
 
-    
+```bash
+\curl -L https://get.rvm.io | bash
+source /etc/profile.d/rvm.sh
+rvm install 1.9.2
+```
+
 ## Install Node.js ##
 The tiler API and the SQL API are both [Node.js](http://nodejs.org) apps.
 
 ```bash
 sudo apt-get install nodejs npm
 ```
+
+We currently run our node apps against version 0.8.x. You can install NVM 
+to handle multiple versions in the same system:
+
+```bash
+curl https://raw.github.com/creationix/nvm/master/install.sh | sh
+```
+
+Then you can install and use any version, for example:
+```bash
+nvm install v0.8.9
+nvm use 0.8.9
+```
+
 
 ## Install Redis ##
 Components of CartoDB, like Windshaft or the SQL API depend on [Redis](http://redis.io).
@@ -223,27 +276,35 @@ sudo apt-get install redis-server
 ```
 
 ## Install Python dependencies ##
-This need to be done from the cartodb20 local copy.
+This needs to be done from the cartodb20 local copy.
 To install the Python modules that CartoDB depends on, you can use
-`easy_install`:
+`easy_install`.
+
+You need to have some dependencies installed before using pip:
+```bash
+sudo apt-get install python2.7-dev
+sudo apt-get install build-essential
+```
 
 ```bash
-$ easy_install pip
-$ pip install -r python_requirements.txt
+easy_install pip
+export CPLUS_INCLUDE_PATH=/usr/include/gdal
+export C_INCLUDE_PATH=/usr/include/gdal
+pip install --no-use-wheel -r python_requirements.txt
 ```
 
 ## Install Varnish
 [Varnish](https://www.varnish-cache.org) is a web application
 accelerator. Components like Windshaft use it to speed up serving tiles
-via the Maps API. 
+via the Maps API.
 
 ```bash
-sudo pip install -e git+https://github.com/RealGeeks/python-varnish.git@0971d6024fbb2614350853a5e0f8736ba3fb1f0d#egg=python-varnish
+sudo apt-get install varnish
 ```
 
 ## Install Mapnik ##
-[Mapnik](http://mapnik.org) is an API for creating beautiful maps. CartoDB uses Mapnik 2.0
-for creating and styling map tiles.
+[Mapnik](http://mapnik.org) is an API for creating beautiful maps.
+CartoDB uses Mapnik for creating and styling map tiles. 
 
 ```bash
 sudo apt-get install libmapnik-dev python-mapnik mapnik-utils
@@ -280,6 +341,12 @@ To run Windshaft-cartodb in development mode, simply type:
 
 ```bash
 node app.js development
+```
+
+## Install ImageMagick ##
+
+```bash
+sudo apt-get install imagemagick
 ```
 
 ## Install local instance of cold beer ##
@@ -339,7 +406,7 @@ sh script/create_dev_user ${SUBDOMAIN}
 Start the resque daemon (needed for import jobs):
 
 ```bash
-$ QUEUE=* bundle exec rake resque:work
+$ bundle exec script/resque
 ```
 
 Finally, start the CartoDB development server on port 3000:
@@ -412,3 +479,6 @@ See TESTING
   - Xabel Álvarez (@johnhackworth)
   - Lorenzo Planas (@lorenzoplanas)
   - Alejandro Martínez (@iamzenitram)
+  - Carlos Matallín (@matallo)
+  - Rafa Casado (@rafacas)
+  - Diego Muñoz (@kartones)

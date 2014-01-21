@@ -16,6 +16,7 @@ require_relative '../connectors/importer'
 class DataImport < Sequel::Model
   REDIS_LOG_KEY_PREFIX          = 'importer'
   REDIS_LOG_EXPIRATION_IN_SECS  = 3600 * 24 * 2 # 2 days
+  MERGE_WITH_UNMATCHING_COLUMN_TYPES_RE = /No .*matches.*argument type.*/
 
   attr_reader   :log
 
@@ -68,15 +69,12 @@ class DataImport < Sequel::Model
     return CartoDB::IMPORTER_ERROR_CODES[self.error_code]
   end
 
-  def raise_error_if_over_quota(number_of_tables)
-    if !current_user.remaining_table_quota.nil? && 
-    current_user.remaining_table_quota.to_i < number_of_tables
-      self.error_code = 8002
-      self.state      = 'failure'
-      save
-      log.append("Over account table limit, please upgrade")
-      raise CartoDB::QuotaExceeded, "More tables required"
-    end
+  def raise_over_table_quota_error
+    self.error_code = 8002
+    self.state      = 'failure'
+    save
+    log.append("Over account table limit, please upgrade")
+    raise CartoDB::QuotaExceeded, "More tables required"
   end
 
   def mark_as_failed_if_stuck!    
@@ -145,6 +143,9 @@ class DataImport < Sequel::Model
     return migrate_existing   if migrate_table.present?
     return from_table         if table_copy.present? || from_query.present?
     new_importer       
+  rescue => exception
+    puts exception.to_s + exception.backtrace.join("\n")
+    raise
   end #dispatch
 
   def running_import_ids
@@ -204,13 +205,23 @@ class DataImport < Sequel::Model
 
   def from_table
     number_of_tables = 1
-    raise_error_if_over_quota(number_of_tables)
+    quota_checker = CartoDB::QuotaChecker.new(current_user)
+    if quota_checker.will_be_over_table_quota?(number_of_tables)
+      raise_over_table_quota_error 
+    end
 
     query = table_copy ? "SELECT * FROM #{table_copy}" : from_query
     new_table_name = import_from_query(table_name, query)
     self.update(table_names: new_table_name)
     migrate_existing(new_table_name)
     self.results.push CartoDB::Importer2::Result.new(success: true, error: nil)
+  rescue Sequel::DatabaseError => exception
+    if exception.to_s =~ MERGE_WITH_UNMATCHING_COLUMN_TYPES_RE
+      set_merge_error(8004)
+    else
+      set_merge_error(8003)
+    end
+    false
   end
 
   def import_from_query(name, query)
@@ -221,6 +232,15 @@ class DataImport < Sequel::Model
     candidates =  current_user.tables.select_map(:name)
     table_name = Table.get_valid_table_name(name, name_candidates: candidates)
     current_user.in_database.run(%Q{CREATE TABLE #{table_name} AS #{query}})
+    if current_user.over_disk_quota?
+      log.append "Over storage quota"
+      log.append "Dropping table #{table_name}"
+      current_user.in_database.run(%Q{DROP TABLE #{table_name}})
+      self.error_code = 8001
+      self.state      = 'failure'
+      save
+      raise CartoDB::QuotaExceeded, "More storage required"
+    end
 
     table_name
   end
@@ -260,8 +280,9 @@ class DataImport < Sequel::Model
       .merge(
         user:     current_user.database_username,
         password: current_user.database_password,
-        database: current_user.database_name
-      )
+        database: current_user.database_name,
+        host:     current_user.database_host
+      ) {|key, o, n| n.nil? || n.empty? ? o : n}
   end #pg_options
 
   def new_importer
@@ -281,8 +302,8 @@ class DataImport < Sequel::Model
 
     self.results    = importer.results
     self.error_code = importer.error_code
-    self.table_name = importer.table.name if importer.success?
-    self.table_id   = importer.table.id if importer.success?
+    self.table_name = importer.table.name if importer.success? && importer.table
+    self.table_id   = importer.table.id if importer.success? && importer.table
     if synchronization_id
       synchronization = 
         CartoDB::Synchronization::Member.new(id: synchronization_id).fetch
@@ -327,7 +348,19 @@ class DataImport < Sequel::Model
       success:        result.success,
       error_code:     result.error_code,
     ) if result
+    payload.merge!(
+      file_url_hostname: URI.parse(public_url).hostname
+    ) if public_url rescue nil
     payload.merge!(error_title: get_error_text) if state == 'failure'
     payload
   end
+
+  def set_merge_error(error_code)
+    self.results = [CartoDB::Importer2::Result.new(
+      success: false, error_code: error_code
+    )]
+    self.error_code = error_code
+    self.state = 'failure'
+  end 
 end
+

@@ -2,12 +2,10 @@
   /*
    * Styles for the CartoDB table
    */
-
-
-  @import "compass";
+  
   @import "../common/vars";
-  @import "../common/sprites";
-  @import "../common/forms";
+  @import "../common/form-elements";
+  @import "../table/table-sprite";
 
   div.panes {
     position:absolute;
@@ -16,8 +14,11 @@
     bottom:0;
     left:0;
 
+    // When table/layer is synced
+    &.synced {top:177px}
+
     .emptyTableContainer {
-      position:relative;
+      position:fixed;
       display: inline-block;
       width:100%;
       text-align: center;
@@ -77,6 +78,16 @@
         width:100%;
         height:60px;
 
+        div.shadow {
+          position:fixed;
+          top:215px;
+          left:0;
+          width:100%;
+          height:10px;
+          background:red;
+          pointer-events:none;
+        }
+
         div.sqlview {
           position: absolute;
           top: 55px;
@@ -114,6 +125,7 @@
           width:100%;
           height:64px;
           z-index:2;
+          background: image-url('layout/thead_bkg.jpg') repeat 0 0;
 
           th {
             position:relative;
@@ -133,8 +145,7 @@
                 height:41px;
                 margin:0;
                 padding:10px 0 15px;
-                background: -ms-linear-gradient(top, #FDFDFD 0%, #F2F2F2 100%);
-                @include background(linear-gradient(top,#FDFDFD,#F2F2F2));
+                background: image-url('layout/thead_bkg.jpg') repeat 0 0;
                 border-bottom:1px solid #CCCCCC;
                 z-index:1;
 
@@ -148,7 +159,6 @@
                   background:rgba(#D9D9D9,0.5);
                   content:' ';
                 }
-                @include box-shadow(rgba(0,0,0,0.015) 0 3px 1px 0);
               }
 
               label {
@@ -276,6 +286,19 @@
           }
         }
 
+        // Shadow
+        div.shadow {
+          position:fixed;
+          left:0;
+          top:215px;
+          right:0;
+          width:100%;
+          height:10px;
+          background: image-url('layout/thead_shadow.png') repeat 0 0;
+          pointer-events:none;
+          z-index:0;
+        }
+
         // Horizontal movement
         &.horizontal {
           tr th > div > div {
@@ -340,7 +363,7 @@
         tr {
           position:relative;
           width:100%;
-          z-index:0;
+          // z-index:0;
           background:white;
           border-top:1px solid #ECECEC;
 
@@ -463,6 +486,10 @@
         tbody tr td div.cell {
           color:rgba(#666666,.5);
         }
+        div.shadow {
+          top:244px;
+        }
+
       }
       // tbody
 
@@ -674,11 +701,11 @@
       width: 13px;
       margin:0 0 1px;
       padding:0;
-      @include icons-sprite(download_blue);
+      @include table-sprite(download_blue);
     }
 
     &:hover span.icon {
-      @include icons-sprite(download_dark);
+      @include table-sprite(download_dark);
     }
   }
 

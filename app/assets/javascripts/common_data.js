@@ -1,11 +1,11 @@
-//= require jquery-ui.core.min
+//= require_tree ../../../vendor/assets/javascripts/jquery-ui
 //= require jquery.fileupload
 //= require jquery.fileupload-fp
 //= require jquery.fileupload-ui
 //= require select2.min
 //= require models
 //= require ../../../lib/assets/javascripts/cartodb/common/dropdown_menu
-//= require ../../../lib/assets/javascripts/cartodb/common/dropdown_basemap
+//= require ../../../lib/assets/javascripts/cartodb/common/user_settings_dropdown
 //= require ../../../lib/assets/javascripts/cartodb/common/forms/string_field
 //= require ../../../lib/assets/javascripts/cartodb/common/forms/widgets
 //= require ../../../lib/assets/javascripts/cartodb/common/import/import_pane.js

@@ -5,10 +5,16 @@
    */
 
 
-  @import "compass"; 
+  @import "compass/css3/box-shadow";
+  @import "compass/css3/border-radius";
+  @import "compass/css3/inline-block";
+  @import "compass/css3/text-shadow";
+  @import "compass/css3/images";
   @import "../common/mixins";
   @import "../common/fonts";
   @import "../common/buttons";
+  @import "../common/common-sprite";
+  @import "../front/front-sprite";
 
 
   // Styles for static pages like 404, 500, HTML5,...
@@ -192,59 +198,16 @@
           }
         }
 
-        div.error {
+        div.field_error {
           position:absolute;
-          top:8px;
-          right:8px;
-          margin:0;
-          display:none;
-          width:auto;
-          z-index:1000;
-
-          a.error {
-            display:block;
-            width:26px;
-            height:27px;
-            margin:0;
-            padding:0;
-            line-height:0;
-            font-size:0;
-            text-transform:uppercase;
-            text-indent:-9999px;
-            @include icons-sprite(error);
-          }
-
-          p {
-            position:absolute;
-            top:-70px;
-            right:-68px;
-            display:none;
-            float:left;
-            width:147px;
-            height:auto!important;
-            padding:10px;
-            font:normal 15px "Helvetica Neue","Helvetica",Arial;
-            color:#CCCCCC;
-            text-align:center;
-            z-index:10;
-            @include border-radius(3px);
-            @include text-shadow(black 0 1px);
-            @include background(linear-gradient(rgba(0,0,0,0.8),rgba(0,0,0,0.9)));
-            background:#333333\9;
-
-            span {
-              position:absolute;
-              bottom:-8px;
-              left:50%;
-              width: 0;
-              height: 0;
-              margin:0 0 0 -6px;
-              border-left: 8px solid transparent;
-              border-right: 8px solid transparent;
-              border-top: 8px solid rgba(0,0,0,0.9);
-              border-top: 8px solid #333333\9;
-            }
-          }
+          right:7px;
+          top:7px;
+          width:26px;
+          height:27px;
+          @include text-indent();
+          @include common-sprite(field_error);
+          z-index:5;
+          &:hover {cursor:pointer}
         }
       }
 
@@ -285,7 +248,7 @@
         padding:0;
         background:none;
         border:none;
-        a.cartodb {display:block; width:124px; height:42px; @include text-indent(); @include icons-sprite(cartodb_opacity);}
+        a.cartodb {display:block; width:124px; height:42px; @include text-indent(); @include front-sprite(cartodb_opacity);}
       }
     }
 
@@ -329,7 +292,7 @@
 
         h1 {
           margin:0;
-          a {display:block; width:124px; height:42px; @include text-indent(); @include icons-sprite(cartodb_dark);}
+          a {display:block; width:124px; height:42px; @include text-indent(); @include front-sprite(cartodb_dark);}
         } 
       }
 

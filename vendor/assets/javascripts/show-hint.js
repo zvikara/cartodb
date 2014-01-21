@@ -104,7 +104,13 @@
 
   function getText(completion) {
     if (typeof completion == "string") return completion;
+    else if (typeof completion == "object") return completion[0];
     else return completion.text;
+  }
+
+  function getType(completion) {
+    if (typeof completion == "object") return completion[1];
+    else return "";
   }
 
   function buildKeyMap(options, handle) {
@@ -151,12 +157,27 @@
 
     var completions = data.list;
     for (var i = 0; i < completions.length; ++i) {
-      var elt = hints.appendChild(document.createElement("li")), cur = completions[i];
+      var elt = hints.appendChild(document.createElement("li")), cur = getText(completions[i]);
       var className = "CodeMirror-hint" + (i ? "" : " CodeMirror-hint-active");
       if (cur.className != null) className = cur.className + " " + className;
       elt.className = className;
       if (cur.render) cur.render(elt, data, cur);
-      else elt.appendChild(document.createTextNode(cur.displayText || getText(cur)));
+      else {
+        var value = document.createElement("span");
+        value.className = (typeof completions[i] == "string") ? "text" : "value";
+        value.innerHTML = cur.displayText || cur;
+        value.hintId = i;
+
+        if (getType(completions[i])) {
+          var type = document.createElement("span");
+          type.className = "type";
+          type.hintId = i;
+          type.innerHTML = getType(completions[i]);
+          elt.appendChild(type);
+        }
+
+        elt.appendChild(value);
+      }
       elt.hintId = i;
     }
 
@@ -167,6 +188,9 @@
     // If we're at the edge of the screen, then we want the menu to appear on the left of the cursor.
     var winW = window.innerWidth || Math.max(document.body.offsetWidth, document.documentElement.offsetWidth);
     var winH = window.innerHeight || Math.max(document.body.offsetHeight, document.documentElement.offsetHeight);
+
+    (options.container || document.body).appendChild(hints);
+
     var box = hints.getBoundingClientRect();
     var overlapX = box.right - winW, overlapY = box.bottom - winH;
     if (overlapX > 0) {
@@ -187,7 +211,6 @@
       }
       hints.style.top = (top = pos.bottom - overlapY) + "px";
     }
-    (options.container || document.body).appendChild(hints);
 
     cm.addKeyMap(this.keyMap = buildKeyMap(options, {
       moveFocus: function(n) { widget.changeActive(widget.selectedHint + n); },
@@ -219,10 +242,10 @@
       var t = e.target || e.srcElement;
       if (t.hintId != null) {widget.changeActive(t.hintId); widget.pick();}
     });
-    // CodeMirror.on(hints, "click", function(e) {
-    //   var t = e.target || e.srcElement;
-    //   if (t.hintId != null) widget.changeActive(t.hintId);
-    // });
+    CodeMirror.on(hints, "mouseover", function(e) {
+      var t = e.target || e.srcElement;
+      if (t.hintId != null) widget.changeActive(t.hintId);
+    });
     CodeMirror.on(hints, "mousedown", function() {
       setTimeout(function(){cm.focus();}, 20);
     });

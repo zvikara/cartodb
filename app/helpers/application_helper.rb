@@ -3,7 +3,7 @@
 module ApplicationHelper
 
   def current_user
-    super(request.subdomain)
+    super(CartoDB.extract_subdomain(request))
   end
 
   def show_footer?
@@ -58,10 +58,11 @@ module ApplicationHelper
       tiler_protocol:      Cartodb.config[:tiler]["private"]["protocol"],
       tiler_port:          Cartodb.config[:tiler]["private"]["port"],
       tiler_domain:        Cartodb.config[:tiler]["private"]["domain"],
-      sql_api_protocol:    Cartodb.config[:sql_api_protocol],
-      sql_api_domain:      "#{request.subdomain}.#{Cartodb.config[:sql_api_domain]}",
-      sql_api_endpoint:    Cartodb.config[:sql_api_endpoint],
-      sql_api_port:        Cartodb.config[:sql_api_port],
+      sql_api_protocol:    Cartodb.config[:sql_api]["private"]["protocol"],
+      sql_api_domain:      Cartodb.config[:sql_api]["private"]["domain"],
+      sql_api_endpoint:    Cartodb.config[:sql_api]["private"]["endpoint"],
+      sql_api_port:        Cartodb.config[:sql_api]["private"]["port"],
+      user_name:           CartoDB.extract_subdomain(request),
       cartodb_com_hosted:  Cartodb.config[:cartodb_com_hosted],
       account_host:        Cartodb.config[:account_host],
       dropbox_api_key:     Cartodb.config[:dropbox_api_key],
@@ -117,6 +118,11 @@ module ApplicationHelper
     end if Rails.env.development?
   end
 
+  def form_error_for(attribute, errors)
+    error_messages = errors[attribute].map{|e| e.humanize }.join('. ')
+    content_tag :div, error_messages, :class => 'field_error' if error_messages.present?
+  end
+
   def v1_vizjson_url(visualization)
     "/api/v1/viz/#{visualization.id}/viz"
   end #v1_vizjson_url
@@ -124,4 +130,13 @@ module ApplicationHelper
   def v2_vizjson_url(visualization)
     "/api/v2/viz/#{visualization.id}/viz"
   end #v2_vizjon_url
+
+  # TODO reactivate in order to allow CartoDB plugins
+  # to inject content into the CartoDB admin UI 
+  # def content_from_plugins_for(hook)
+  #   ::CartoDB::Plugin.registered.map do |plugin| 
+  #     hook_name = "#{plugin.name.underscore}_#{hook}_hook"
+  #     send(hook_name) if defined?(hook_name)
+  #   end.join('').html_safe
+  # end
 end

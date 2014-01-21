@@ -55,11 +55,8 @@ module CartoDB
 
       # Sanitize column names where needed
       column_names = @db_connection.schema(@current_name).map{ |s| s[0].to_s }
-      need_sanitizing = column_names.each do |column_name|
-        if column_name != column_name.sanitize_column_name
-          @db_connection.run("ALTER TABLE #{@current_name} RENAME COLUMN \"#{column_name}\" TO #{column_name.sanitize_column_name}")
-        end
-      end
+
+      sanitize(column_names)
 
       # Rename our table
       if @current_name != @suggested_name
@@ -82,7 +79,7 @@ module CartoDB
                 #@data_import.log << ("Transforming the_geom from #{srid} to 4326")
                 # move original geometry column around
                 @db_connection.run("UPDATE #{@suggested_name} SET the_geom = ST_Transform(the_geom, 4326);")
-                @db_connection.run("CREATE INDEX #{@suggested_name}_the_geom_gist ON #{@suggested_name} USING GIST (the_geom)")
+                #@db_connection.run("CREATE INDEX #{@suggested_name}_the_geom_gist ON #{@suggested_name} USING GIST (the_geom)")
               end
             rescue => e
               #@data_import.log << ("Failed to transform the_geom from #{srid} to 4326 #{@suggested_name}. #{e.inspect}")
@@ -92,8 +89,11 @@ module CartoDB
         rescue => e
           #@data_import.log << ("Failed to process the_geom renaming to invalid_the_geom. #{e.inspect}")
           # if no SRID or invalid the_geom, we need to remove it from the table
-          @db_connection.run("ALTER TABLE #{@suggested_name} RENAME COLUMN the_geom TO invalid_the_geom")
-          column_names.delete("the_geom")
+          begin
+            @db_connection.run("ALTER TABLE #{@suggested_name} RENAME COLUMN the_geom TO invalid_the_geom")
+            column_names.delete("the_geom")
+          rescue => exception
+          end
         end
       end
 
@@ -134,7 +134,7 @@ module CartoDB
             trim(CAST(\"#{matching_latitude}\" AS text))  ~ '^(([-+]?(([0-9]|[1-8][0-9])(\.[0-9]+)?))|[-+]?90)$'
             GEOREF
             )
-            @db_connection.run("CREATE INDEX \"#{@suggested_name}_the_geom_gist\" ON \"#{@suggested_name}\" USING GIST (the_geom)")
+            #@db_connection.run("CREATE INDEX \"#{@suggested_name}_the_geom_gist\" ON \"#{@suggested_name}\" USING GIST (the_geom)")
         end
       end
 
@@ -175,6 +175,36 @@ module CartoDB
     def log(str)
       if @@debug
         puts str
+      end
+    end
+
+    def sanitize(column_names)
+      columns_to_sanitize = column_names.select do |column_name|
+        column_name != column_name.sanitize_column_name
+      end
+
+      correct_columns = column_names - columns_to_sanitize
+
+      sanitization_map = Hash[
+        columns_to_sanitize.map { |column_name|
+          [column_name, column_name.sanitize_column_name]
+        }
+      ]
+
+      sanitization_map = sanitization_map.inject({}) { |memo, pair|
+        if memo.values.include?(pair.last) || correct_columns.include?(pair.last)
+          memo.merge(pair.first => "#{pair.last}_1")
+        else
+          memo.merge(pair.first => pair.last)
+        end
+      }
+
+      sanitization_map.each do |unsanitized, sanitized|
+        @db_connection.run(%Q{
+          ALTER TABLE #{@current_name}
+          RENAME COLUMN "#{unsanitized}"
+          TO "#{sanitized}"
+        })
       end
     end
   end

@@ -8,6 +8,10 @@ describe Layer do
     @user = create_user(:quota_in_bytes => @quota_in_bytes, :table_quota => @table_quota)
   end
 
+  after(:all) do
+    @user.destroy
+  end
+
   before(:each) do
     delete_user_data @user
     @table = Table.new
@@ -194,8 +198,8 @@ describe Layer do
   end
 
   describe '#base_layer?' do
-    it 'returns true if its kind is different from carto' do
-      layer = Layer.new(kind: 'bogus')
+    it 'returns true if its kind is a base layer' do
+      layer = Layer.new(kind: 'tiled')
       layer.base_layer?.should == true
     end 
   end #base_layer?
@@ -276,6 +280,7 @@ describe Layer do
       derived.layers(:cartodb).first.uses_private_tables?.should be_true
       @table.privacy = 1
       @table.save
+      @user.reload
 
       derived.layers(:cartodb).first.uses_private_tables?.should be_false
     end

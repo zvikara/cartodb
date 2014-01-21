@@ -25,8 +25,7 @@ describe Api::Json::VisualizationsController do
       email:    'client@example.com',
       password: 'clientex'
     )
-    @user.set_map_key
-    @api_key = @user.get_map_key
+    @api_key = @user.api_key
   end
 
   before(:each) do
@@ -365,11 +364,11 @@ describe Api::Json::VisualizationsController do
       response.fetch('tags').should == []
     end
 
-    it 'updates the table in a table visualization' do
+    it 'updates the table in a table visualization', now: true do
       table_attributes = table_factory
       id = table_attributes.fetch('table_visualization').fetch('id')
 
-      sleep(0.5)
+      sleep(0.6)
       put "/api/v1/viz/#{id}?api_key=#{@api_key}",
         { name: 'changed name' }.to_json, @headers
       last_response.status.should == 200

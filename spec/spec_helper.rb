@@ -17,6 +17,10 @@ RSpec.configure do |config|
     CartoDB::RedisTest.up
   end
 
+  config.before(:each) do
+    Table.any_instance.stubs(:tile_request).returns true
+  end
+
   config.before(:all) do
     $tables_metadata.flushdb
     $api_credentials.flushdb
@@ -30,7 +34,8 @@ RSpec.configure do |config|
     Rails::Sequel.connection[
       "SELECT datname FROM pg_database WHERE datistemplate IS FALSE AND datallowconn IS TRUE AND datname like 'cartodb_test_user_%'"
     ].map(:datname).each { |user_database_name| 
-      Rails::Sequel.connection.run("SELECT pg_terminate_backend(procpid) FROM pg_stat_activity WHERE datname = '#{user_database_name}'")
+      puts "Dropping leaked test database #{user_database_name}"
+      User::terminate_database_connections(user_database_name);
       Rails::Sequel.connection.run("drop database #{user_database_name}") 
     }
     Rails::Sequel.connection[

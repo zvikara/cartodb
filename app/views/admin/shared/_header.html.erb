@@ -1,19 +1,16 @@
 <header>
   <div class="inner">
     <h1 class="left"><%= link_to "CartoDB", root_path %></h1>
-    <ul class="right">
-      <!--
-      <li><%= link_to 'dashboard', dashboard_path, :class => "dashboard " + selected_if(current_path == dashboard_path) %></li>
-      -->
+    <ul class="right">      
       <li><%= link_to 'tables', "/dashboard/tables", :class => :tables %></a></li>
       <li><%= link_to 'visualizations', "/dashboard/visualizations", :class => :visualizations %></a></li>
-
       <li><%= link_to 'common data', dashboard_common_data_path, :class => selected_if(current_path == dashboard_common_data_path) %></a></li>
-      <li><%= link_to 'developers', Cartodb.config[:developers_host] %></a></li>
-      <li><%= link_to 'tutorials', Cartodb.config[:developers_host] + "/tutorials.html" %></a></li>
+      <li><%= link_to 'documentation', Cartodb.config[:developers_host] %></a></li>
       <li>
         <a class="dropdown account separator" href="<%= account_url %>"><%= current_user.username %><span>|</span></a>
       </li>
     </ul>
   </div>
 </header>
+
+<%= yield :account_settings %>
