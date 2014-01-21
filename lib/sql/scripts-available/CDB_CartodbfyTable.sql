@@ -348,18 +348,14 @@ BEGIN
 
   -- "test_quota" and "test_quota_per_row"
 
-  SELECT public._CDB_UserQuotaInBytes() INTO quota_in_bytes;
-
   sql := 'CREATE TRIGGER test_quota BEFORE UPDATE OR INSERT ON '
       || reloid::text
-      || ' EXECUTE PROCEDURE public.CDB_CheckQuota(1, '
-      || quota_in_bytes || ')';
+      || ' EXECUTE PROCEDURE public.CDB_CheckQuota(1)';
   EXECUTE sql;
 
   sql := 'CREATE TRIGGER test_quota_per_row BEFORE UPDATE OR INSERT ON '
       || reloid::text
-      || ' FOR EACH ROW EXECUTE PROCEDURE public.CDB_CheckQuota(0.001,'
-      || quota_in_bytes || ')';
+      || ' FOR EACH ROW EXECUTE PROCEDURE public.CDB_CheckQuota(0.001)';
   EXECUTE sql;
  
   -- Enable user triggers
