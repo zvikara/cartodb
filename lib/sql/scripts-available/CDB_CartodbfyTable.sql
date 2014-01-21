@@ -322,7 +322,7 @@ BEGIN
     EXECUTE sql;
   END IF;
 
-  -- Drop and re-create all triggers
+  -- Re-create all triggers
 
   -- NOTE: drop/create has the side-effect of re-enabling disabled triggers
 
@@ -358,7 +358,5 @@ BEGIN
       || ' FOR EACH ROW EXECUTE PROCEDURE public.CDB_CheckQuota(0.001)';
   EXECUTE sql;
  
-  -- Enable user triggers
-
 END;
 $$ LANGUAGE PLPGSQL;
