@@ -1165,18 +1165,10 @@ class Table < Sequel::Model(:user_tables)
 
   def set_trigger_the_geom_webmercator
     self.cartodbfy
-    # this would really belong in a migration
-    owner.in_database(:as => :superuser).run('
-      DROP TRIGGER IF EXISTS update_the_geom_webmercator_trigger ON "#{self.name}";
-    ')
   end
 
   def set_trigger_update_updated_at
     self.cartodbfy
-    # this would really belong in a migration
-    owner.in_database(:as => :superuser).run('
-      DROP TRIGGER IF EXISTS update_updated_at_trigger ON "#{self.name}";
-    ')
   end
 
   # Drop "cache_checkpoint", if it exists
