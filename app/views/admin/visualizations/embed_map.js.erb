@@ -4,7 +4,6 @@
     var INCLUDE_GMAPS = <% if @visualization.map.provider == 'googlemaps' %> true <% else %> false <% end %>;
     var VIZJSON_URL = '<%= vizjson_url(@visualization.id) %>';
     var ACCOUNT_TYPE = "<%= @visualization.user.account_type.downcase %>";
-    var IS_CUSTOM_INSTALL = <%= Cartodb.config[:cartodb_com_hosted].present? %>;
 
     var doc = document;
     var head = doc.getElementsByTagName('head')[0];
@@ -60,7 +59,7 @@
 
     var string_fn = function(v) { return v; }
     var bool_fn   = function(v) { return v == 'true' }
-    var logo_fn   = function(v) { return ( ACCOUNT_TYPE != "coronelli" || IS_CUSTOM_INSTALL) ? true : v == 'true' };
+    var logo_fn   = function(v) { return ( ACCOUNT_TYPE != "coronelli") ? true : v == 'true' };
     var layer_fn  = function(v) {
       var rt = [];
       var layers = v.split("|");
