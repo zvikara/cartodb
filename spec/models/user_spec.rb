@@ -188,7 +188,21 @@ describe User do
 
   it "should invalidate all his vizjsons when his account type changes" do
     @user.account_type = 'WADUS'
-    @user.expects(:invalidate_varnish_cache).times(1)
+    CartoDB::Varnish.any_instance.expects(:purge)
+      .with("obj.http.X-Cache-Channel ~ #{@user.database_name}.*:vizjson").times(1).returns(true)
+    @user.save
+  end
+
+  it "should invalidate all his vizjsons when his disqus_shortname changes" do
+    @user.disqus_shortname = 'WADUS'
+    CartoDB::Varnish.any_instance.expects(:purge)
+      .with("obj.http.X-Cache-Channel ~ #{@user.database_name}.*:vizjson").times(1).returns(true)
+    @user.save
+  end
+
+  it "should not invalidate anything when his quota_in_bytes changes" do
+    @user.quota_in_bytes = @user.quota_in_bytes + 1.megabytes
+    CartoDB::Varnish.any_instance.expects(:purge).times(0)
     @user.save
   end
 
@@ -609,7 +623,7 @@ describe User do
 
     DataImport.where(:user_id => doomed_user.id).count.should == 0
     Table.where(:user_id => doomed_user.id).count.should == 0
-    Layer.db["SELECT * from layers_users WHERE user_id = #{doomed_user.id}"].count.should == 0
+    Layer.db["SELECT * from layers_users WHERE user_id = '#{doomed_user.id}'"].count.should == 0
   end
 
   it "should correctly identify last billing cycle" do
