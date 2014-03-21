@@ -1,5 +1,4 @@
-require_relative 'connections.rb'
-
+require_relative 'utils'
 module CartoDB
   module Relocator
     class TriggerLoader
@@ -21,16 +20,24 @@ module CartoDB
       end
 
       def load_triggers(conn=source_db, redis=@config[:redis], queue=@dbname)
+        puts "Creating trigger functions.."
         conn.query(create_trigger_funcs_command(redis, queue))
         load_table_trigger(conn)
         conn.query(create_ddl_trigger_command)
       end
 
       def unload_triggers(conn=source_db)
+        puts "Unloading DDL triggers.."
         conn.query(drop_ddl_trigger_command)
         get_all_tables.each do |tablename|
+          puts "Unloading trigger on table #{tablename}.."
           conn.query(drop_table_trigger_command(tablename))
         end
+        puts "Dropping functions.."
+        conn.query("DROP FUNCTION queue_event_ddl_py(text) CASCADE;")
+        conn.query("DROP FUNCTION queue_event() CASCADE;")
+        conn.query("DROP FUNCTION queue_event_ddl() CASCADE;")
+
       end
 
       def get_all_tables(conn=source_db)
@@ -59,7 +66,7 @@ module CartoDB
       end
 
       def create_trigger_funcs_command(redis, queue="queue")
-        erb = ERB.new(File.read('trigger_functions.sql.erb'))
+        erb = ERB.new(File.read(File.join(File.dirname(File.expand_path(__FILE__)), 'trigger_functions.sql.erb')))
         erb.result binding
       end
 

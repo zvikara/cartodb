@@ -2,7 +2,7 @@ module CartoDB
   module Relocator
     class Utils
       def self.conn_string(config)
-        %Q{#{config[:user]} -h #{config[:host]} -p #{config[:port]} -d #{config[:dbname]} }
+        %Q{#{!config[:user] ? "" : "-U "+config[:user] } -h #{config[:host]} -p #{config[:port]} -d #{config[:dbname]} }
       end
   
       def self.deep_merge(first, second)

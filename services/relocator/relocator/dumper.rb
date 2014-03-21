@@ -31,7 +31,7 @@ module CartoDB
         begin
           conn.query("CREATE ROLE \"#{username}\";
               ALTER ROLE \"#{username}\" WITH NOSUPERUSER INHERIT NOCREATEROLE NOCREATEDB LOGIN NOREPLICATION")
-        rescue PG::DuplicateObject
+        rescue PG::Error
           puts "Object already exists!"
         end
       end
@@ -46,8 +46,9 @@ module CartoDB
         puts "Creating DB #{dbname}..."
         begin
           superuser_conn.query("CREATE DATABASE \"#{dbname}\"")
-        rescue PG::DuplicateDatabase
-          puts "Database already exists!"
+        rescue PG::Error => e
+          puts "Error- Database already exists?"
+          throw e
         end
       end
 
@@ -56,7 +57,6 @@ module CartoDB
         create_db(@config[:target][:conn][:dbname])
         system("#{dump_command(@config[:source][:conn])} | #{restore_command(@config[:target][:conn])}")
       end
-
     end
   end
 end

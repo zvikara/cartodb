@@ -5,14 +5,14 @@ require 'redis'
 require_relative 'relocator/dumper'
 require_relative 'relocator/queue_consumer'
 require_relative 'relocator/dumper'
-require_relative 'relocator/dumper'
+require_relative 'relocator/trigger_loader'
 module CartoDB
   module Relocator
     class Relocation
       include CartoDB::Relocator::Connections
 
       def initialize(config = {})
-        @dbname = ARGV[0]
+        @dbname = ARGV[0] || ""
         default_config = {
           :dbname => @dbname,
           :username => @dbname.gsub(/_db$/, ""),
@@ -40,16 +40,19 @@ module CartoDB
         @dumper.migrate
         @trigger_loader.unload_triggers(target_db)
         @consumer.redis_migrator_loop
+      end
+
+      def finalize
+        @consumer.redis_migrator_loop
         @trigger_loader.unload_triggers
       end
 
+
+      def rollback
+        @trigger_loader.unload_triggers
+        @consumer.empty_queue
+      end
     end
   end
 end
 
-migration = CartoDB::Relocator::Relocation.new(
-  target: {conn: {host: '95.85.57.226', port: '6432'}},
-  source: {conn: {host: '188.226.152.230', port: '6432'}},
-  redis: {:host => '188.226.152.222'}
-)
-migration.migrate

@@ -14,13 +14,17 @@ module CartoDB
       def redis
         @redis ||= Redis.new(@config[:redis])
       end
+      
+      def empty_queue
+        redis.del @dbname
+      end
 
-      def redis_migrator_loop(wait_for=10)
+      def redis_migrator_loop(wait_for=5)
         wait_for_counter = 0
         puts "REDIS QUEUE LENGTH: #{redis.llen(@dbname)}"
         while wait_for_counter < wait_for do
           puts "Reading queue.."
-          key = redis.brpop(@dbname, timeout: 1)
+          key = redis.brpop(@dbname, 1)
           if key == nil
             puts "Nothing read for #{wait_for_counter} seconds."
             wait_for_counter += 1
