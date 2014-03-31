@@ -31,12 +31,20 @@ module CartoDB
           user.database_host = new_database_host
           puts user.save #this will terminate all connections
           user.enable_remote_db_user
-          relocator.finalize
+	  user.tables.each{|table| table.table_id = nil; table.save}
+          user.link_outdated_tables
+          # Check if link_deleted_tables would find any unlinked table
+          metadata_tables_ids = user.tables.select(:table_id).map(&:table_id)
+          dropped_tables = metadata_tables_ids - user.real_tables.map{|t| t[:oid]}
+	  raise "Dropped_tables is >0: #{dropped_tables.length} #{dropped_tables}" if dropped_tables.length > 0
+	  relocator.finalize
         rescue => e
           puts "Error: #{e}, #{e.backtrace}"
           puts "Rolling back (changing back database_host and dropping triggers) in 5 secs"
           sleep 5
           relocator.rollback
+	  user.database_host = old_database_host
+          user.save
         end
       end # dump
     end
