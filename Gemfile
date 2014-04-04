@@ -30,6 +30,7 @@ gem "addressable",             "2.2.8", require: "addressable/uri"
 gem "github_api",              "~> 0.10.2"
 
 gem "ejs",                     "~> 1.1.1"
+gem "psych",                   "~> 2.0.5"
 
 group :production, :staging do
   gem 'unicorn',               "4.8.2"

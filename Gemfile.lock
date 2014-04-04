@@ -228,6 +228,7 @@ GEM
       coderay (~> 1.0.5)
       method_source (~> 0.8)
       slop (~> 3.4)
+    psych (2.0.5)
     rack (1.4.1)
     rack-cache (1.2)
       rack (>= 0.4)
@@ -398,6 +399,7 @@ DEPENDENCIES
   parallel_tests
   pg (= 0.13.2)
   poltergeist (>= 1.0.0)
+  psych (~> 2.0.5)
   rack (= 1.4.1)
   rack-reverse-proxy (= 0.4.4)
   rack-test (= 0.6.2)
