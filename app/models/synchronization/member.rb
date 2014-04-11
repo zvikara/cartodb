@@ -103,19 +103,38 @@ module CartoDB
       end
 
       def run
+        datasource_failed = false
         self.state    = STATE_SYNCING
 
         log           = TrackRecord::Log.new(prefix: REDIS_LOG_KEY_PREFIX, expiration: REDIS_LOG_EXPIRATION_IN_SECS)
         self.log_id   = log.id
         store
 
-        downloader    = get_downloader
+        begin
+          downloader = get_downloader
+        rescue TokenExpiredOrInvalidError => ex
+          log.append "Token expired or invalid fetching from service #{ex.service_name}"
+          datasource_failed = true
+          begin
+            user.oauths.remove(ex.service_name)
+          rescue => ex
+            log.append "Exception removing OAuth service #{ex.service_name.presence}: #{ex.message}"
+            log.append ex.backtrace
+          end
+        rescue => ex
+          log.append "Error fetching downloader from service #{ex.service_name.presence}: #{ex.message}"
+          datasource_failed = true
+        end
 
         runner        = CartoDB::Importer2::Runner.new(pg_options, downloader, log, user.remaining_quota)
         database      = user.in_database
         importer      = CartoDB::Synchronization::Adapter.new(name, runner, database, user)
 
-        importer.run
+        if datasource_failed
+          importer.failed = true
+        else
+          importer.run
+        end
         self.ran_at   = Time.now
         self.run_at   = Time.now + interval
 
@@ -135,15 +154,6 @@ module CartoDB
         puts exception.backtrace
         set_failure_state_from(importer)
         store
-
-        if exception.kind_of?(TokenExpiredOrInvalidError)
-          begin
-            user.oauths.remove(exception.service_name)
-          rescue => ex
-            log.append "Exception removing OAuth: #{ex.message}"
-            log.append ex.backtrace
-          end
-        end
         self
       end
 

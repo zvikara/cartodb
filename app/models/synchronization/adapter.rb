@@ -5,7 +5,7 @@ module CartoDB
     class Adapter
       DESTINATION_SCHEMA = 'public'
 
-      attr_accessor :table
+      attr_accessor :table, :failed
 
       def initialize(table_name, runner, database, user)
         @table_name   = table_name
