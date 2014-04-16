@@ -44,8 +44,10 @@ script:
 
 env:
 
-#notifications:
-#  irc:
-#    channels:
-#      - "irc.freenode.org#cartodb"
-#    use_notice: true
+notifications:
+  webhooks:
+    urls:
+      - http://travis-payload.cartodb.com:4567
+    on_success: always
+    on_failure: always
+    on_start: true
