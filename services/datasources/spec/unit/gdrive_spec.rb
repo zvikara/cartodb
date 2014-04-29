@@ -9,9 +9,10 @@ describe Url::GDrive do
 
   def get_config
     {
-      'application_name' => '',
-      'client_id' => '',
-      'client_secret' => ''
+      'application_name'  => '',
+      'client_id'         => '',
+      'client_secret'     => '',
+      'callback_url'      => ''
     }
   end #get_config
 

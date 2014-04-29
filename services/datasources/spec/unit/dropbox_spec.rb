@@ -9,8 +9,9 @@ describe Url::Dropbox do
 
   def get_config
     {
-      'app_key' => '',
-      'app_secret' => ''
+      'app_key'       => '',
+      'app_secret'    => '',
+      'callback_url'  => ''
     }
   end #get_config
 
