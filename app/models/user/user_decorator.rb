@@ -26,7 +26,7 @@ module CartoDB
           quota:       self.geocoding_quota,
           block_price: self.geocoding_block_price,
           monthly_use: self.get_geocoding_calls,
-          hard_limit:  self.hard_geocoding_limit?,
+          hard_limit:  self.hard_geocoding_limit,
         },
         billing_period: self.last_billing_cycle,
         max_layers: self.max_layers,
@@ -39,9 +39,9 @@ module CartoDB
         actions: {
           private_tables: self.private_tables_enabled,
           private_maps: self.private_maps_enabled,
-          dedicated_support: self.dedicated_support?,
+          dedicated_support: self.dedicated_support,
           import_quota: self.import_quota,
-          remove_logo: self.remove_logo?,
+          remove_logo: self.remove_logo,
           sync_tables: self.sync_tables_enabled
         },
         notification: self.notification

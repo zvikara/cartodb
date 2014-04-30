@@ -20,7 +20,7 @@
 
     <style type="text/css">
       /* Styles showing up new cartodb text */
-    <% if @visualization.user.remove_logo? && !Cartodb.config[:cartodb_com_hosted].present? %>
+    <% if @visualization.user.remove_logo && !Cartodb.config[:cartodb_com_hosted].present? %>
       <% if !params['cartodb_logo'] || params['cartodb_logo'] == "true" %>
         .cartodb-text {display:block;}
       <% end %>
@@ -251,7 +251,7 @@
 
         var bool_fn = function(v) { return v == 'true' }
           , is_custom_install = <%= Cartodb.config[:cartodb_com_hosted].present? %>
-          , logo_fn  = function(v) { return ( <%= !@visualization.user.remove_logo? %> || is_custom_install ) ? true : v == 'true' }
+          , logo_fn  = function(v) { return ( <%= !@visualization.user.remove_logo %> || is_custom_install ) ? true : v == 'true' }
           , layer_fn = function(v) {
         if(!v || !v.length) {
           return null;

@@ -139,7 +139,7 @@ class Geocoding < Sequel::Model
   end # translate_formatter
 
   def max_geocodable_rows
-    return nil if user.blank? || !user.hard_geocoding_limit?
+    return nil if user.blank? || !user.hard_geocoding_limit
     user.geocoding_quota - user.get_geocoding_calls
   rescue
     nil
