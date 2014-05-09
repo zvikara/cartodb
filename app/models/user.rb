@@ -96,8 +96,8 @@ class User < Sequel::Model
     super
     save_metadata
     changes = (self.previous_changes.present? ? self.previous_changes.keys : [])
-    set_statement_timeouts   if changes.include?(:user_timeout) || changes.include?(:database_timeout)
-    rebuild_quota_trigger    if changes.include?(:quota_in_bytes)
+    set_statement_timeouts        if changes.include?(:user_timeout) || changes.include?(:database_timeout)
+    rebuild_quota_triggers_only   if changes.include?(:quota_in_bytes)
     invalidate_varnish_cache(regex: '.*:vizjson') if changes.include?(:account_type) || changes.include?(:disqus_shortname)
     User.terminate_database_connections(database_name, previous_changes[:database_host][0]) if changes.include?(:database_host)
   end
@@ -757,7 +757,8 @@ $$
     update_gauge("visualizations.table", table_count)
     update_gauge("visualizations.derived", visualization_count)
   end
-  
+
+  # Misleading name, it also loads ALL SQL functions so use instead rebuild_quota_triggers_only if possible
   def rebuild_quota_trigger
     load_cartodb_functions
     tables.all.each do |table|
@@ -768,6 +769,16 @@ $$
       end
     end
   end
+
+  def rebuild_quota_triggers_only
+    tables.all.each do |table|
+      begin
+        table.set_trigger_check_quota
+      rescue Sequel::DatabaseError => e
+        next if e.message =~ /.*does not exist\s*/
+      end
+    end
+  end #rebuild_quota_triggers_only
 
   def importing_jobs
     imports = DataImport.where(state: ['complete', 'failure']).invert

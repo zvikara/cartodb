@@ -206,8 +206,8 @@ describe User do
     @user.save
   end
 
-  it "should rebuild the quota trigger after changing the quota" do
-    @user.expects(:rebuild_quota_trigger).once
+  it "should rebuild the quota triggers after changing the quota" do
+    @user.expects(:rebuild_quota_triggers_only).once
     @user.quota_in_bytes = @user.quota_in_bytes + 1.megabytes
     @user.save
   end

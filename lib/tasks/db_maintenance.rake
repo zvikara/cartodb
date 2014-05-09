@@ -304,10 +304,10 @@ namespace :cartodb do
       end
     end
 
-    desc "Update test_quota trigger"
+    desc "Update test_quota triggers (without loading all functions)"
     task :update_test_quota_trigger => :environment do
       User.all.each do |user|
-        user.rebuild_quota_trigger
+        user.rebuild_quota_triggers_only
       end
     end
 
