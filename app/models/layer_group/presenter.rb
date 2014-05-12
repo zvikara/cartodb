@@ -14,17 +14,13 @@ module CartoDB
 
       def to_poro
         return nil if cartodb_layers.empty?
-        { 
+        {
           type:               'layergroup',
           options:            {
             user_name:          options.fetch(:user_name),
             tiler_protocol:     (configuration[:tiler]["public"]["protocol"] rescue nil),
             tiler_domain:       (configuration[:tiler]["public"]["domain"] rescue nil),
             tiler_port:         (configuration[:tiler]["public"]["port"] rescue nil),
-            sql_api_protocol:   (configuration[:sql_api]["public"]["protocol"] rescue nil),
-            sql_api_domain:     (configuration[:sql_api]["public"]["domain"] rescue nil),
-            sql_api_endpoint:   (configuration[:sql_api]["public"]["endpoint"] rescue nil),
-            sql_api_port:       (configuration[:sql_api]["public"]["port"] rescue nil),
             cdn_url:            configuration.fetch(:cdn_url, nil),
             layer_definition:   {
               stat_tag:           options.fetch(:visualization_id),

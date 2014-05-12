@@ -139,7 +139,7 @@ describe CartoDB::NamedMapsWrapper::NamedMaps do
 
       Typhoeus::Expectation.clear()
       # Retrieval
-      Typhoeus.stub( named_map_url(template_id, @user.api_key), 
+      Typhoeus.stub( named_map_url(template_id, @user.api_key),
       { method: :get} )
             .and_return(
               Typhoeus::Response.new( code: 200, body: JSON::dump( template_data ) )
@@ -310,19 +310,19 @@ describe CartoDB::NamedMapsWrapper::NamedMaps do
       Typhoeus::Expectation.clear()
 
       # Return having a named map...
-      Typhoeus.stub( named_map_url(template_id,@user.api_key), 
+      Typhoeus.stub( named_map_url(template_id,@user.api_key),
         { method: :get} )
             .and_return(
               Typhoeus::Response.new( code: 200, body: JSON::dump( template_data ) )
             )
       # Before deleting a put is performed too
-      Typhoeus.stub( named_map_url(template_id,@user.api_key), 
+      Typhoeus.stub( named_map_url(template_id,@user.api_key),
         { method: :put} )
             .and_return(
               Typhoeus::Response.new( code: 200, body: JSON::dump( template_data ) )
             )
       # And return a 204 correctly on deletion
-      Typhoeus.stub( named_map_url(template_id,@user.api_key), 
+      Typhoeus.stub( named_map_url(template_id,@user.api_key),
         { method: :delete } )
               .and_return(
                 Typhoeus::Response.new( code: 204, body: "" )
@@ -367,7 +367,7 @@ describe CartoDB::NamedMapsWrapper::NamedMaps do
 
       table, derived_vis, template_id = create_private_table_with_public_visualization(template_data)
 
-      Typhoeus.stub( named_map_url(template_id,@user.api_key), 
+      Typhoeus.stub( named_map_url(template_id,@user.api_key),
         { method: :delete } )
               .and_return(
                 Typhoeus::Response.new( code: 204, body: "" )
@@ -412,13 +412,13 @@ describe CartoDB::NamedMapsWrapper::NamedMaps do
         derived_vis.map.remove_layer(layer) if layer.kind == 'carto'
       }
 
-      derived_vis.map.add_layer( Layer.create( 
-        kind: 'torque', 
-        options: { 
-          query: "select * from #{table.name}", 
+      derived_vis.map.add_layer( Layer.create(
+        kind: 'torque',
+        options: {
+          query: "select * from #{table.name}",
           table_name: table.name ,
           tile_style: '',
-        } 
+        }
       ) )
       derived_vis.store()
 
@@ -439,10 +439,6 @@ describe CartoDB::NamedMapsWrapper::NamedMaps do
       vizjson[:layers][1][:options][:tiler_protocol].should eq 'http'
       vizjson[:layers][1][:options][:tiler_domain].should eq 'localhost.lan'
       vizjson[:layers][1][:options][:tiler_port].should eq public_tiler_port
-      vizjson[:layers][1][:options][:sql_api_protocol].should eq 'http'
-      vizjson[:layers][1][:options][:sql_api_domain].should eq 'localhost.lan'
-      vizjson[:layers][1][:options][:sql_api_endpoint].should eq '/api/v1/sql'
-      vizjson[:layers][1][:options][:sql_api_port].should eq 8080
       vizjson[:layers][1][:options].include?(:cdn_url).should eq true
       vizjson[:layers][1][:options].include?(:layer_name).should eq true
       vizjson[:layers][1][:options].include?(:table_name).should eq true
@@ -564,13 +560,13 @@ describe CartoDB::NamedMapsWrapper::NamedMaps do
 
       table, derived_vis, template_id = create_private_table_with_public_visualization(template_data)
 
-      derived_vis.map.add_layer( Layer.create( 
-        kind: 'torque', 
-        options: { 
-          query: "select * from #{table.name}", 
+      derived_vis.map.add_layer( Layer.create(
+        kind: 'torque',
+        options: {
+          query: "select * from #{table.name}",
           table_name: table.name ,
           tile_style: '',
-        } 
+        }
       ) )
       derived_vis.store()
 
@@ -611,10 +607,6 @@ describe CartoDB::NamedMapsWrapper::NamedMaps do
       vizjson[:layers][2][:options][:tiler_protocol].should eq 'http'
       vizjson[:layers][2][:options][:tiler_domain].should eq 'localhost.lan'
       vizjson[:layers][2][:options][:tiler_port].should eq public_tiler_port
-      vizjson[:layers][2][:options][:sql_api_protocol].should eq 'http'
-      vizjson[:layers][2][:options][:sql_api_domain].should eq 'localhost.lan'
-      vizjson[:layers][2][:options][:sql_api_endpoint].should eq '/api/v1/sql'
-      vizjson[:layers][2][:options][:sql_api_port].should eq 8080
       vizjson[:layers][2][:options].include?(:cdn_url).should eq true
       vizjson[:layers][2][:options].include?(:layer_name).should eq true
       vizjson[:layers][2][:options].include?(:table_name).should eq true
@@ -676,15 +668,15 @@ describe CartoDB::NamedMapsWrapper::NamedMaps do
 
       table, derived_vis, template_id = create_private_table_with_public_visualization(template_data)
 
-      derived_vis.map.add_layer( Layer.create( 
-        kind: 'carto', 
-        options: { 
-          query: "select * from #{table.name}", 
+      derived_vis.map.add_layer( Layer.create(
+        kind: 'carto',
+        options: {
+          query: "select * from #{table.name}",
           table_name: table.name,
           style_version: '2.1.1',
           tile_style: '/** */',
           interactivity: 'cartodb_id'
-        } 
+        }
       ) )
       derived_vis.store()
 
@@ -772,7 +764,7 @@ describe CartoDB::NamedMapsWrapper::NamedMaps do
   # To ease testing, convert everything to symbols
   def get_vizjson(visualization)
       vizjson = visualization.to_vizjson().deep_symbolize_keys()
-      vizjson[:layers].map! { |layer| 
+      vizjson[:layers].map! { |layer|
         layer.deep_symbolize_keys()
       }
       vizjson
@@ -781,7 +773,7 @@ describe CartoDB::NamedMapsWrapper::NamedMaps do
 
   # Does all the work and stubbing required to create a private table with an associated visualization
   # NOTE: Leaves stubbed calls to GET the template so they return the correct template data
-  def create_private_table_with_public_visualization(template_data, 
+  def create_private_table_with_public_visualization(template_data,
       visualization_privacy = CartoDB::Visualization::Member::PRIVACY_PUBLIC)
     table = create_table( user_id: @user.id )
     derived_vis = CartoDB::Visualization::Copier.new(@user, table.table_visualization).copy()
@@ -802,26 +794,26 @@ describe CartoDB::NamedMapsWrapper::NamedMaps do
     collection  = Visualization::Collection.new.fetch()
     collection.add(derived_vis)
     collection.store()
-    
+
     template_data[:template][:name] = template_id
 
     Typhoeus::Expectation.clear()
     # Retrievals
-    Typhoeus.stub( named_map_url(template_id, @user.api_key), 
+    Typhoeus.stub( named_map_url(template_id, @user.api_key),
       { method: :get} )
             .and_return(
               Typhoeus::Response.new( code: 200, body: JSON::dump( template_data ) )
             )
 
     # Updates
-    Typhoeus.stub( named_map_url(template_id, @user.api_key), 
+    Typhoeus.stub( named_map_url(template_id, @user.api_key),
         { method: :put} )
               .and_return(
                 Typhoeus::Response.new( code: 200, body: JSON::dump( template_data ) )
               )
 
     # Vizjson uses the public endpoint, so stub it too
-    Typhoeus.stub( "http://#{@user.username}.localhost.lan:#{public_tiler_port}/tiles/template/#{template_id}?api_key=#{@user.api_key}", 
+    Typhoeus.stub( "http://#{@user.username}.localhost.lan:#{public_tiler_port}/tiles/template/#{template_id}?api_key=#{@user.api_key}",
       { method: :get} )
             .and_return(
               Typhoeus::Response.new( code: 200, body: JSON::dump( template_data ) )

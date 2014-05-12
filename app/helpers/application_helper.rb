@@ -58,10 +58,6 @@ module ApplicationHelper
       tiler_protocol:      Cartodb.config[:tiler]["private"]["protocol"],
       tiler_port:          Cartodb.config[:tiler]["private"]["port"],
       tiler_domain:        Cartodb.config[:tiler]["private"]["domain"],
-      sql_api_protocol:    Cartodb.config[:sql_api]["private"]["protocol"],
-      sql_api_domain:      Cartodb.config[:sql_api]["private"]["domain"],
-      sql_api_endpoint:    Cartodb.config[:sql_api]["private"]["endpoint"],
-      sql_api_port:        Cartodb.config[:sql_api]["private"]["port"],
       user_name:           CartoDB.extract_subdomain(request),
       cartodb_com_hosted:  Cartodb.config[:cartodb_com_hosted],
       account_host:        Cartodb.config[:account_host],
@@ -103,13 +99,6 @@ module ApplicationHelper
       account_host:        Cartodb.config[:account_host],
       max_asset_file_size: Cartodb.config[:assets]["max_file_size"]
     }
-
-    # Assumption: it is safe to expose private SQL API endpoint (or it is the same just using HTTPS)
-    sql_api_type = (options[:https_sql_api].present? && options[:https_sql_api]) ? 'private' : 'public'
-    config[:sql_api_protocol] = Cartodb.config[:sql_api][sql_api_type]['protocol']
-    config[:sql_api_domain]   = Cartodb.config[:sql_api][sql_api_type]['domain']
-    config[:sql_api_endpoint] = Cartodb.config[:sql_api][sql_api_type]['endpoint']
-    config[:sql_api_port]     = Cartodb.config[:sql_api][sql_api_type]['port']
 
     if Cartodb.config[:graphite_public].present?
       config[:statsd_host] = Cartodb.config[:graphite_public]['host']

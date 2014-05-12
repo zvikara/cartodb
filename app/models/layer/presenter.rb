@@ -35,7 +35,7 @@ module CartoDB
 
       def to_vizjson_v2
         if base?(layer)
-          with_kind_as_type(layer.public_values) 
+          with_kind_as_type(layer.public_values)
         elsif torque?(layer)
           as_torque(layer)
         else
@@ -60,7 +60,7 @@ module CartoDB
           options:    options_data_v1
         }
       end #to_vizjson_v1
-  
+
       private
 
       attr_reader :layer, :options, :configuration
@@ -68,10 +68,10 @@ module CartoDB
       # Decorates the layer presentation with data if needed. nils on the decoration act as removing the field
       def decorate_with_data(source_hash, decoration_data=nil)
         if (not decoration_data.nil?)
-          decoration_data.each { |key, value| 
+          decoration_data.each { |key, value|
             source_hash[key] = value
-            source_hash.delete_if { |k, v| 
-              v.nil? 
+            source_hash.delete_if { |k, v|
+              v.nil?
             }
           }
         end
@@ -105,10 +105,6 @@ module CartoDB
             tiler_protocol:     (configuration[:tiler]["public"]["protocol"] rescue nil),
             tiler_domain:       (configuration[:tiler]["public"]["domain"] rescue nil),
             tiler_port:         (configuration[:tiler]["public"]["port"] rescue nil),
-            sql_api_protocol:   (configuration[:sql_api]["public"]["protocol"] rescue nil),
-            sql_api_domain:     (configuration[:sql_api]["public"]["domain"] rescue nil),
-            sql_api_endpoint:   (configuration[:sql_api]["public"]["endpoint"] rescue nil),
-            sql_api_port:       (configuration[:sql_api]["public"]["port"] rescue nil),
             cdn_url:            configuration.fetch(:cdn_url, nil),
             layer_name:         name_for(layer)
           }.merge(
@@ -122,7 +118,7 @@ module CartoDB
       end
 
       def infowindow_data_v2
-        whitelisted_infowindow(with_template(layer.infowindow)) 
+        whitelisted_infowindow(with_template(layer.infowindow))
       rescue => exception
       end
 
@@ -155,7 +151,7 @@ module CartoDB
 
       def name_for(layer)
         layer_alias = layer.options.fetch('table_name_alias', nil)
-        table_name  = layer.options.fetch('table_name') 
+        table_name  = layer.options.fetch('table_name')
 
         return table_name unless layer_alias && !layer_alias.empty?
         layer_alias
@@ -194,7 +190,7 @@ module CartoDB
       end #public_options
 
       def whitelisted_infowindow(infowindow)
-        infowindow.select { |key, value| 
+        infowindow.select { |key, value|
           INFOWINDOW_KEYS.include?(key) ||
           INFOWINDOW_KEYS.include?(key.to_s)
         }
