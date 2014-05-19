@@ -2,7 +2,6 @@
 require 'forwardable'
 require 'virtus'
 require 'json'
-require 'redcarpet'
 require 'markdown_render'
 require_relative './collection'
 require_relative './presenter'
