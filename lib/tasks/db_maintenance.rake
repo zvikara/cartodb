@@ -53,12 +53,9 @@ namespace :cartodb do
     ########################
     desc 'Install/upgrade CARTODB SQL functions'
     task :load_functions => :environment do |t, args|
-
       count = User.count
       execute_on_users_with_index(:load_functions.to_s, Proc.new { |user, i|
           begin
-            query = ''
-
             postgis_present = user.in_database(as: :superuser).fetch(%Q{
               SELECT COUNT(*) AS count FROM pg_extension WHERE extname='postgis'
             }).first[:count] > 0
@@ -72,21 +69,25 @@ namespace :cartodb do
               SELECT COUNT(*) AS count FROM pg_extension WHERE extname='cartodb'
             }).first[:count] > 0
 
-            query << (postgis_present ? 'ALTER EXTENSION postgis UPDATE;' : 'CREATE EXTENSION postgis FROM unpackaged;')
-            query << (topology_present ? 'ALTER EXTENSION postgis_topology UPDATE;' : 'CREATE EXTENSION postgis_topology FROM unpackaged;')
-            query << (triggers_present ? 'ALTER EXTENSION schema_triggers UPDATE;' : 'CREATE EXTENSION schema_triggers;')
-            query << (cartodb_present ? 'ALTER EXTENSION cartodb UPDATE;' : "CREATE EXTENSION cartodb VERSION '0.1.0' FROM unpackaged;")
+            user.in_database(as: :superuser)
+              .run(postgis_present ? 'ALTER EXTENSION postgis UPDATE;' : 'CREATE EXTENSION postgis FROM unpackaged;')
+            user.in_database(as: :superuser)
+              .run(topology_present ? 'ALTER EXTENSION postgis_topology UPDATE;' : 'CREATE EXTENSION postgis_topology FROM unpackaged;')
+            user.in_database(as: :superuser)
+              .run(triggers_present ? 'ALTER EXTENSION schema_triggers UPDATE;' : 'CREATE EXTENSION schema_triggers;')
+            user.in_database(as: :superuser)
+              .run(cartodb_present ? 'ALTER EXTENSION cartodb UPDATE;' : 'CREATE EXTENSION cartodb FROM unpackaged;')
 
-            user.in_database(as: :superuser).run(query)
-
-            user.in_database(as: :superuser).run(%Q{
-              SELECT cartodb.cdb_enable_ddl_hooks();
-            })
+            user.in_database(as: :superuser).run('SELECT cartodb.cdb_enable_ddl_hooks();')
 
             printf "OK %-#{20}s (%-#{4}s/%-#{4}s)\n", user.username, i+1, count
+
+            User.terminate_database_connections(user.database_name, user.database_host)
           rescue => e
             printf "FAIL %-#{20}s (%-#{4}s/%-#{4}s) - #{e.message}\n", user.username, i+1, count
           end
+
+
       })
     end
 
