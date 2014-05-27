@@ -1237,8 +1237,8 @@ TRIGGER
   end
 
   def cartodbfy
-    owner.in_database(:as => :superuser).run("SELECT CDB_CartodbfyTable('#{self.name}')")
-    self.schema(reload:true)
+    #owner.in_database(:as => :superuser).run("SELECT CDB_CartodbfyTable('#{self.name}')")
+    #self.schema(reload:true)
   end
 
   # Set a "cache_checkpoint" trigger to invalidate varnish

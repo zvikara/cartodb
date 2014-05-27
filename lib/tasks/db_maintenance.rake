@@ -53,16 +53,38 @@ namespace :cartodb do
     ########################
     desc 'Install/upgrade CARTODB SQL functions'
     task :load_functions => :environment do |t, args|
-
-      functions_list = ENV['FUNCTIONS'].blank? ? [] : ENV['FUNCTIONS'].split(',')
-
       count = User.count
       execute_on_users_with_index(:load_functions.to_s, Proc.new { |user, i|
           begin
-            user.load_cartodb_functions(functions_list)
+            query = ''
+
+            postgis_present = user.in_database(as: :superuser).fetch(%Q{
+              SELECT COUNT(*) AS count FROM pg_available_extensions WHERE name='postgis'
+            }).first[:count] > 0
+            topology_present = user.in_database(as: :superuser).fetch(%Q{
+              SELECT COUNT(*) AS count FROM pg_available_extensions WHERE name='postgis_topology'
+            }).first[:count] > 0
+            triggers_present = user.in_database(as: :superuser).fetch(%Q{
+              SELECT COUNT(*) AS count FROM pg_available_extensions WHERE name='schema_triggers'
+            }).first[:count] > 0
+            cartodb_present = user.in_database(as: :superuser).fetch(%Q{
+              SELECT COUNT(*) AS count FROM pg_available_extensions WHERE name='cartodb'
+            }).first[:count] > 0
+
+            query << (postgis_present ? 'ALTER EXTENSION postgis UPDATE;' : 'CREATE EXTENSION IF NOT EXISTS postgis FROM unpackaged;')
+            query << (topology_present ? 'ALTER EXTENSION postgis_topology UPDATE;' : 'CREATE EXTENSION IF NOT EXISTS postgis_topology FROM unpackaged;')
+            query << (triggers_present ? 'ALTER EXTENSION schema_triggers UPDATE;' : 'CREATE EXTENSION IF NOT EXISTS schema_triggers FROM unpackaged;')
+            query << (cartodb_present ? 'ALTER EXTENSION cartodb UPDATE;' : 'CREATE EXTENSION IF NOT EXISTS cartodb FROM unpackaged;')
+
+            user.in_database(as: :superuser).run(query)
+
+            user.in_database(as: :superuser).run(%Q{
+              SELECT cartodb.cdb_enable_ddl_hooks();
+            })
+
             printf "OK %-#{20}s (%-#{4}s/%-#{4}s)\n", user.username, i+1, count
           rescue => e
-            printf "FAIL %-#{20}s (%-#{4}s/%-#{4}s) #{e.message}\n", user.username, i+1, count
+            printf "FAIL %-#{20}s (%-#{4}s/%-#{4}s) - #{e.message}\n", user.username, i+1, count
           end
       })
     end
