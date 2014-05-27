@@ -53,28 +53,29 @@ namespace :cartodb do
     ########################
     desc 'Install/upgrade CARTODB SQL functions'
     task :load_functions => :environment do |t, args|
+
       count = User.count
       execute_on_users_with_index(:load_functions.to_s, Proc.new { |user, i|
           begin
             query = ''
 
             postgis_present = user.in_database(as: :superuser).fetch(%Q{
-              SELECT COUNT(*) AS count FROM pg_available_extensions WHERE name='postgis'
+              SELECT COUNT(*) AS count FROM pg_extension WHERE extname='postgis'
             }).first[:count] > 0
             topology_present = user.in_database(as: :superuser).fetch(%Q{
-              SELECT COUNT(*) AS count FROM pg_available_extensions WHERE name='postgis_topology'
+              SELECT COUNT(*) AS count FROM pg_extension WHERE extname='postgis_topology'
             }).first[:count] > 0
             triggers_present = user.in_database(as: :superuser).fetch(%Q{
-              SELECT COUNT(*) AS count FROM pg_available_extensions WHERE name='schema_triggers'
+              SELECT COUNT(*) AS count FROM pg_extension WHERE extname='schema_triggers'
             }).first[:count] > 0
             cartodb_present = user.in_database(as: :superuser).fetch(%Q{
-              SELECT COUNT(*) AS count FROM pg_available_extensions WHERE name='cartodb'
+              SELECT COUNT(*) AS count FROM pg_extension WHERE extname='cartodb'
             }).first[:count] > 0
 
-            query << (postgis_present ? 'ALTER EXTENSION postgis UPDATE;' : 'CREATE EXTENSION IF NOT EXISTS postgis FROM unpackaged;')
-            query << (topology_present ? 'ALTER EXTENSION postgis_topology UPDATE;' : 'CREATE EXTENSION IF NOT EXISTS postgis_topology FROM unpackaged;')
-            query << (triggers_present ? 'ALTER EXTENSION schema_triggers UPDATE;' : 'CREATE EXTENSION IF NOT EXISTS schema_triggers FROM unpackaged;')
-            query << (cartodb_present ? 'ALTER EXTENSION cartodb UPDATE;' : 'CREATE EXTENSION IF NOT EXISTS cartodb FROM unpackaged;')
+            query << (postgis_present ? 'ALTER EXTENSION postgis UPDATE;' : 'CREATE EXTENSION postgis FROM unpackaged;')
+            query << (topology_present ? 'ALTER EXTENSION postgis_topology UPDATE;' : 'CREATE EXTENSION postgis_topology FROM unpackaged;')
+            query << (triggers_present ? 'ALTER EXTENSION schema_triggers UPDATE;' : 'CREATE EXTENSION schema_triggers;')
+            query << (cartodb_present ? 'ALTER EXTENSION cartodb UPDATE;' : "CREATE EXTENSION cartodb VERSION '0.1.0' FROM unpackaged;")
 
             user.in_database(as: :superuser).run(query)
 
