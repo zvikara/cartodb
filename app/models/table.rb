@@ -356,10 +356,9 @@ class Table < Sequel::Model(:user_tables)
         user_database.run(%Q{ALTER TABLE "#{self.name}" DROP COLUMN #{aux_cartodb_id_column}})
       end
 
-      self.schema(reload:true)
-      self.cartodbfy
-
       user_database.run(%Q{ALTER TABLE "#{self.name}" ADD PRIMARY KEY (cartodb_id)})
+
+      self.schema(reload:true)
     end
 
   end
@@ -471,8 +470,6 @@ class Table < Sequel::Model(:user_tables)
     if self.new_table
       begin
         update_table_pg_stats
-
-        # Set default triggers
         set_triggers
       rescue => e
         self.handle_creation_error(e)
@@ -487,12 +484,10 @@ class Table < Sequel::Model(:user_tables)
     unless self.name.blank? || e.message =~ /relation .* already exists/
       @data_import.log << ("Dropping table #{self.name}") if @data_import
       $tables_metadata.del key
-
       self.remove_table_from_user_database
     end
 
     @data_import.log << ("Import Error: #{e.try(:message)}") if @data_import
-
     raise e
   end
 
@@ -1203,26 +1198,8 @@ class Table < Sequel::Model(:user_tables)
   end
 
   def set_triggers
-    drop_trigger_cache_checkpoint
-    self.cartodbfy
-  end
-
-  def set_trigger_the_geom_webmercator
-    self.cartodbfy
-  end
-
-  # Drop "cache_checkpoint", if it exists
-  # NOTE: this is for migrating from 2.1
-  def drop_trigger_cache_checkpoint
-    owner.in_database(:as => :superuser).run(<<-TRIGGER
-    DROP TRIGGER IF EXISTS cache_checkpoint ON "#{self.name}";
-TRIGGER
-    )
-  end
-
-  def cartodbfy
-    #owner.in_database(:as => :superuser).run("SELECT CDB_CartodbfyTable('#{self.name}')")
-    #self.schema(reload:true)
+    # Triggers are set inside cartodbfication
+    owner.in_database(:as => :superuser).run("SELECT CDB_CartodbfyTable('#{self.name}')")
   end
 
   # move to C
