@@ -78,6 +78,11 @@ namespace :cartodb do
             user.in_database(as: :superuser)
               .run(cartodb_present ? 'ALTER EXTENSION cartodb UPDATE;' : 'CREATE EXTENSION cartodb FROM unpackaged;')
 
+            # Temp way of setting dev versions of the extension
+            user.in_database(as: :superuser)
+              .run("ALTER EXTENSION cartodb UPDATE TO '0.2.0devnext'; ALTER EXTENSION cartodb UPDATE TO '0.2.0dev';")
+
+
             user.in_database(as: :superuser).run('SELECT cartodb.cdb_enable_ddl_hooks();')
 
             printf "OK %-#{20}s (%-#{4}s/%-#{4}s)\n", user.username, i+1, count

@@ -62,7 +62,9 @@ module CartoDB
       end #postgres_options
 
       def db
-        Sequel.postgres(pg_options)
+        Sequel.postgres(pg_options.merge(:after_connect=>(proc do |conn|
+          conn.execute('SET search_path TO "$user", public, cartodb')
+        end)))
       end #db
 
       def wait_for_table_present(table_name, started_at=Time.now)

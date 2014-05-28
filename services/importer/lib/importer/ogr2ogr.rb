@@ -62,14 +62,17 @@ module CartoDB
         "-nln #{SCHEMA}.#{table_name}"
       end #layer_name_option
 
+      # @see http://www.gdal.org/drv_pg.html
+      # @see http://www.gdal.org/drv_pg_advanced.html
       def postgres_options
         %Q{PG:"host=#{pg_options.fetch(:host)} }      +
         %Q{port=#{pg_options.fetch(:port)} }          +
         %Q{user=#{pg_options.fetch(:user)} }          +
         %Q{dbname=#{pg_options.fetch(:database)} }    +
         %Q{password=#{pg_options.fetch(:password)} }  +
-        %Q{active_schema=#{SCHEMA}"}
+        %Q{schemas=#{SCHEMA},cartodb"}
       end #postgres_options
+      #        %Q{active_schema=#{SCHEMA} }                  +
 
       def layer_creation_options
         "-lco #{dimension_option} -lco #{precision_option}"
