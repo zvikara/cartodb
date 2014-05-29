@@ -113,7 +113,10 @@ CartoDB::Application.routes.draw do
 
       resources :tables, :only => [:create, :show, :update] do
         collection do
-          get '/tags/:tag_name' => 'tables#index', :as => 'show_tag'
+          get     '/tags/:tag_name'        => 'tables#index', :as => 'show_tag'
+          put     '/:table_oid/registar/'  => 'tables#registar_add'
+          post    '/:table_oid/registar/'  => 'tables#registar_update'
+          delete  '/:table_oid/registar/'  => 'tables#registar_remove'
         end
 
         resources :records, :only => [:index, :create, :show, :update, :destroy]

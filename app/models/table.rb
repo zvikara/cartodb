@@ -116,7 +116,9 @@ class Table < Sequel::Model(:user_tables)
 
   attr_accessor :force_schema, :import_from_file,:import_from_url, :import_from_query,
                 :import_from_table_copy, :importing_encoding,
-                :temporal_the_geom_type, :migrate_existing_table, :new_table, :keep_user_database_table
+                :temporal_the_geom_type, :migrate_existing_table, :new_table, :keep_user_database_table,
+                # If present, will imply different flow for table creation and handling name changes upon saving
+                :sync_from_registar
 
   ## Callbacks
 
@@ -371,8 +373,11 @@ class Table < Sequel::Model(:user_tables)
     update_updated_at
 
 
+    if sync_from_registar.present?
+      # No need to do anything, as table has already been deleted pyshically
+
     # The Table model only migrates now, never imports
-    if migrate_existing_table.present?
+    elsif migrate_existing_table.present?
       if self.data_import_id.nil? #needed for non ui-created tables
         @data_import  = DataImport.new(:user_id => self.user_id)
         @data_import.updated_at = Time.now
@@ -1338,7 +1343,11 @@ TRIGGER
       end
 
       begin
-        owner.in_database.rename_table(@name_changed_from, name)
+        if sync_from_registar.present?
+          # Do nothing, already renamed in the user DB, and model has new name set also
+        else
+          owner.in_database.rename_table(@name_changed_from, name)
+        end
       rescue StandardError => exception
         exception_to_raise = CartoDB::BaseCartoDBError.new(
             "Table update_name_changes(): '#{@name_changed_from}' doesn't exist", exception)

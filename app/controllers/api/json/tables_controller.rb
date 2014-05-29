@@ -1,6 +1,7 @@
 # coding: UTF-8
 require_relative '../../../models/visualization/presenter'
 require_relative '../../../../services/named-maps-api-wrapper/lib/named-maps-wrapper/exceptions'
+require_relative '../../../models/table/registar'
 
 class Api::Json::TablesController < Api::ApplicationController
   TABLE_QUOTA_REACHED_TEXT = 'You have reached your table quota'
@@ -120,18 +121,58 @@ class Api::Json::TablesController < Api::ApplicationController
     render_jsonp({ errors: { named_maps: exception } }, 400)
   end
 
-  def vizzjson
-    @table = Table.find_by_subdomain(CartoDB.extract_subdomain(request), params[:id])
-    if @table.present? && (@table.public? || (current_user.present? && @table.owner.id == current_user.id))
-      response.headers['X-Cache-Channel'] = "#{@table.varnish_key}:vizjson"
-      response.headers['Cache-Control']   = 'no-cache,max-age=86400,must-revalidate, public'
-      render_jsonp({})
-    else
-      head :forbidden
-    end
+  def registar_add
+    action = CartoDB::Table::Registar::ACTION_CREATE
+    (render_jsonp({ error: 'missing table_name' }, 400) and return) unless params[:table_name].present?
+    (render_jsonp({ error: 'missing table_oid' }, 400) and return) unless params[:table_oid].present?
+
+    registar_notify(action, params[:table_name], params[:table_oid])
+    render_jsonp({action: action})
   end
 
-  protected
+  def registar_update
+    action = CartoDB::Table::Registar::ACTION_UPDATE
+    (render_jsonp({ error: 'missing table_name' }, 400) and return) unless params[:table_name].present?
+    (render_jsonp({ error: 'missing table_oid' }, 400) and return) unless params[:table_oid].present?
+
+    registar_notify(action, params[:table_name], params[:table_oid])
+    render_jsonp({action: action})
+  end
+
+  def registar_remove
+    action = CartoDB::Table::Registar::ACTION_REMOVE
+    (render_jsonp({ error: 'missing table_name' }, 400) and return) unless params[:table_name].present?
+    (render_jsonp({ error: 'missing table_oid' }, 400) and return) unless params[:table_oid].present?
+
+    registar_notify(action, params[:table_name], params[:table_oid])
+    render_jsonp({action: action})
+  end
+
+  private
+
+  def registar_notify(action, table_name, table_oid)
+    result = nil
+    registar = CartoDB::Table::Registar.new(current_user)
+
+    case action
+      when CartoDB::Table::Registar::ACTION_CREATE
+        result = registar.create(table_name, table_oid)
+      when CartoDB::Table::Registar::ACTION_UPDATE
+        result = registar.update(table_name, table_oid)
+      when CartoDB::Table::Registar::ACTION_REMOVE
+        result = registar.remove(table_name, table_oid)
+      else
+        render_jsonp({ error: 'unknown action' }, 400) and return
+    end
+
+    if result
+      render_jsonp({action: action})
+    else
+      render_jsonp({ error: 'invalid result' }, 400)
+    end
+  rescue CartoDB::Table::RegistarError => exception
+    render_jsonp({ error: "#{exception.message}" }, 500)
+  end
 
   def load_table
     rx = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/
@@ -141,5 +182,6 @@ class Api::Json::TablesController < Api::ApplicationController
       @table = Table.where(:name => params[:id], :user_id => current_user.id).first
     end
   end
+
 end
 
