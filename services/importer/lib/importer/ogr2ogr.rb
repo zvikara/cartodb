@@ -69,10 +69,9 @@ module CartoDB
         %Q{port=#{pg_options.fetch(:port)} }          +
         %Q{user=#{pg_options.fetch(:user)} }          +
         %Q{dbname=#{pg_options.fetch(:database)} }    +
-        %Q{password=#{pg_options.fetch(:password)} }  +
-        %Q{schemas=#{SCHEMA},cartodb"}
+        %Q{password=#{pg_options.fetch(:password)}"}
+        # 'schemas=#{SCHEMA},cartodb' param is no longer needed, let the DB build the proper one
       end #postgres_options
-      #        %Q{active_schema=#{SCHEMA} }                  +
 
       def layer_creation_options
         "-lco #{dimension_option} -lco #{precision_option}"
