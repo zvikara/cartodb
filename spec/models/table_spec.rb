@@ -1885,7 +1885,7 @@ describe Table do
     end
   end #validation_for_link_privacy
 
-  describe '#validation_for_link_privacy' do
+  describe '#the_geom_conversions' do
     it 'tests the_geom conversions and expected results' do
       # Empty table/default schema (no conversion)
       table = new_table(:name => 'one', :user_id => @user.id)
