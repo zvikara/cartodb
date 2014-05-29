@@ -19,8 +19,7 @@ module CartoDB
         "#{osm_indexing_option} #{pg_copy_option} #{client_encoding_option} " +
         "#{shape_encoding_option} #{executable_path} #{output_format_option} " +
         "#{postgres_options} #{projection_option} #{layer_creation_options} " +
-        "#{filepath} #{layer} #{layer_name_option} #{new_layer_type_option}" +
-        "#{spatial_index_option}"
+        "#{filepath} #{layer} #{layer_name_option} #{new_layer_type_option}"
       end #command
 
       def executable_path
@@ -51,10 +50,6 @@ module CartoDB
         # See http://trac.osgeo.org/gdal/ticket/5495
         #'PG_USE_COPY=YES'
       end #pg_copy_option
-
-      def spatial_index_option
-        'SPATIAL_INDEX=OFF'
-      end #spatial_index_option
 
       def client_encoding_option
         "PGCLIENTENCODING=#{options.fetch(:encoding, ENCODING)}"
