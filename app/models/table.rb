@@ -1199,7 +1199,7 @@ class Table < Sequel::Model(:user_tables)
 
   def set_triggers
     # Triggers are set inside cartodbfication
-    owner.in_database(:as => :superuser).run("SELECT CDB_CartodbfyTable('#{self.name}')")
+    owner.in_database(:as => :superuser).run("SELECT cartodb.CDB_CartodbfyTable('#{self.name}')")
   end
 
   # move to C
