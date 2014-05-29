@@ -127,7 +127,6 @@ class Api::Json::TablesController < Api::ApplicationController
     (render_jsonp({ error: 'missing table_oid' }, 400) and return) unless params[:table_oid].present?
 
     registar_notify(action, params[:table_name], params[:table_oid])
-    render_jsonp({action: action})
   end
 
   def registar_update
@@ -136,7 +135,6 @@ class Api::Json::TablesController < Api::ApplicationController
     (render_jsonp({ error: 'missing table_oid' }, 400) and return) unless params[:table_oid].present?
 
     registar_notify(action, params[:table_name], params[:table_oid])
-    render_jsonp({action: action})
   end
 
   def registar_remove
@@ -145,7 +143,6 @@ class Api::Json::TablesController < Api::ApplicationController
     (render_jsonp({ error: 'missing table_oid' }, 400) and return) unless params[:table_oid].present?
 
     registar_notify(action, params[:table_name], params[:table_oid])
-    render_jsonp({action: action})
   end
 
   private
