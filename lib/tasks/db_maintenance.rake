@@ -56,43 +56,11 @@ namespace :cartodb do
       count = User.count
       execute_on_users_with_index(:load_functions.to_s, Proc.new { |user, i|
           begin
-            postgis_present = user.in_database(as: :superuser).fetch(%Q{
-              SELECT COUNT(*) AS count FROM pg_extension WHERE extname='postgis'
-            }).first[:count] > 0
-            topology_present = user.in_database(as: :superuser).fetch(%Q{
-              SELECT COUNT(*) AS count FROM pg_extension WHERE extname='postgis_topology'
-            }).first[:count] > 0
-            triggers_present = user.in_database(as: :superuser).fetch(%Q{
-              SELECT COUNT(*) AS count FROM pg_extension WHERE extname='schema_triggers'
-            }).first[:count] > 0
-            cartodb_present = user.in_database(as: :superuser).fetch(%Q{
-              SELECT COUNT(*) AS count FROM pg_extension WHERE extname='cartodb'
-            }).first[:count] > 0
-
-            user.in_database(as: :superuser)
-              .run(postgis_present ? 'ALTER EXTENSION postgis UPDATE;' : 'CREATE EXTENSION postgis FROM unpackaged;')
-            user.in_database(as: :superuser)
-              .run(topology_present ? 'ALTER EXTENSION postgis_topology UPDATE;' : 'CREATE EXTENSION postgis_topology FROM unpackaged;')
-            user.in_database(as: :superuser)
-              .run(triggers_present ? 'ALTER EXTENSION schema_triggers UPDATE;' : 'CREATE EXTENSION schema_triggers;')
-            user.in_database(as: :superuser)
-              .run(cartodb_present ? 'ALTER EXTENSION cartodb UPDATE;' : 'CREATE EXTENSION cartodb FROM unpackaged;')
-
-            # Temp way of setting dev versions of the extension
-            user.in_database(as: :superuser)
-              .run("ALTER EXTENSION cartodb UPDATE TO '0.2.0devnext'; ALTER EXTENSION cartodb UPDATE TO '0.2.0dev';")
-
-
-            user.in_database(as: :superuser).run('SELECT cartodb.cdb_enable_ddl_hooks();')
-
+            user.load_cartodb_functions(extensions_only=true)
             printf "OK %-#{20}s (%-#{4}s/%-#{4}s)\n", user.username, i+1, count
-
-            User.terminate_database_connections(user.database_name, user.database_host)
           rescue => e
             printf "FAIL %-#{20}s (%-#{4}s/%-#{4}s) - #{e.message}\n", user.username, i+1, count
           end
-
-
       })
     end
 
