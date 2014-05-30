@@ -45,10 +45,7 @@ module CartoDB
       end #output_format_option
 
       def pg_copy_option
-        # We won't use COPY as it doesn't play nicely
-        # with automatic cartodbfication of the just-created table
-        # See http://trac.osgeo.org/gdal/ticket/5495
-        #'PG_USE_COPY=YES'
+        'PG_USE_COPY=YES'
       end #pg_copy_option
 
       def client_encoding_option
