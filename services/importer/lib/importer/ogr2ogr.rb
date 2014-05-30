@@ -48,6 +48,10 @@ module CartoDB
         'PG_USE_COPY=YES'
       end #pg_copy_option
 
+      def spatial_index_option
+        'SPATIAL_INDEX=OFF'
+      end #spatial_index_option
+
       def client_encoding_option
         "PGCLIENTENCODING=#{options.fetch(:encoding, ENCODING)}"
       end #encoding_option
@@ -74,7 +78,7 @@ module CartoDB
       end #postgres_options
 
       def layer_creation_options
-        "-lco #{dimension_option} -lco #{precision_option}"
+        "-lco #{dimension_option} -lco #{precision_option} -lco #{spatial_index_option}"
       end #layer_creatiopn_options
 
       def projection_option

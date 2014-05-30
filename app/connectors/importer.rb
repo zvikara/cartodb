@@ -83,18 +83,9 @@ module CartoDB
           RENAME TO "#{new_name}"
         })
 
-        rename_the_geom_index_if_exists(current_name, new_name)
         new_name
       rescue
         retry unless rename_attempts > MAX_RENAME_RETRIES
-      end
-
-      def rename_the_geom_index_if_exists(current_name, new_name)
-        database.execute(%Q{
-          ALTER INDEX "#{ORIGIN_SCHEMA}"."#{current_name}_geom_idx"
-          RENAME TO "the_geom_#{UUIDTools::UUID.timestamp_create.to_s.gsub('-', '_')}"
-        })
-      rescue
       end
 
       def persist_metadata(name, data_import_id)
