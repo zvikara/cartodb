@@ -65,7 +65,7 @@ namespace :cartodb do
             user.load_cartodb_functions
             printf "OK %-#{20}s (%-#{4}s/%-#{4}s)\n", user.username, i+1, count
           rescue => e
-            printf "FAIL %-#{20}s (%-#{4}s/%-#{4}s) #{e.message}\n", user.username, i+1, count
+            printf "FAIL %-#{20}s (%-#{4}s/%-#{4}s) - #{e.message}\n", user.username, i+1, count
           end
       }, threads, thread_sleep)
     end
@@ -258,86 +258,10 @@ namespace :cartodb do
       end
     end
 
-
-    ##########################
-    # REBUILD GEOM WEBMERCATOR
-    ##########################    
-    desc "Add the_geom_webmercator column to every table which needs it"
-    task :add_the_geom_webmercator => :environment do
-      User.all.each do |user|
-        tables = Table.filter(:user_id => user.id).all
-        next if tables.empty?
-        user.load_cartodb_functions 
-        puts "Updating tables in db '#{user.database_name}' (#{user.username})"
-        tables.each do |table|
-          has_the_geom = false
-          user.in_database do |user_database|
-            begin
-              flatten_schema = user_database.schema(table.name.to_sym).flatten
-            rescue => e
-              puts " Skipping table #{table.name}: #{e}"
-              next
-            end
-            has_the_geom = true if flatten_schema.include?(:the_geom)
-            if flatten_schema.include?(:the_geom) && !flatten_schema.include?(Table::THE_GEOM_WEBMERCATOR.to_sym)
-              puts " Updating table #{table.name}"
-              geometry_type = if col = user_database["select GeometryType(the_geom) FROM #{table.name} limit 1"].first
-                col[:geometrytype]
-              end
-              geometry_type ||= "POINT"
-              user_database.run("SELECT AddGeometryColumn('#{table.name}','#{Table::THE_GEOM_WEBMERCATOR}',#{CartoDB::GOOGLE_SRID},'#{geometry_type}',2)")
-              user_database.run("CREATE INDEX #{table.name}_#{Table::THE_GEOM_WEBMERCATOR}_idx ON #{table.name} USING GIST(#{Table::THE_GEOM_WEBMERCATOR})")                      
-              user_database.run("ANALYZE #{table.name}")
-              table.save_changes
-            else
-              puts " Skipping table #{table.name}: does not have 'the_geom' or has '#{Table::THE_GEOM_WEBMERCATOR}' already"
-            end
-          end
-          if has_the_geom
-            table.set_trigger_the_geom_webmercator
-            
-            user.in_database do |user_database|
-              user_database.run("ALTER TABLE #{table.name} DROP CONSTRAINT IF EXISTS enforce_srid_the_geom")
-              user_database.run("update #{table.name} set \"#{Table::THE_GEOM_WEBMERCATOR}\" = CDB_TransformToWebmercator(the_geom)")
-              user_database.run("ALTER TABLE #{table.name} ADD CONSTRAINT enforce_srid_the_geom CHECK (st_srid(the_geom) = #{CartoDB::SRID})")
-            end
-          end
-        end
-      end
-    end
-
     desc "Update test_quota trigger"
     task :update_test_quota_trigger => :environment do
       User.all.each do |user|
         user.rebuild_quota_trigger
-      end
-    end
-
-    desc "Update update_the_geom_webmercator_trigger"
-    task :update_the_geom_webmercator_trigger => :environment do
-      User.all.each do |user|
-        user.load_cartodb_functions 
-        
-        tables = Table.filter(:user_id => user.id).all
-        next if tables.empty?
-        puts "Updating tables in db '#{user.database_name}' (#{user.username})"
-        tables.each do |table|
-          has_the_geom = false
-          user.in_database do |user_database|
-            begin
-              has_the_geom = true if user_database.schema(table.name.to_sym).flatten.include?(:the_geom)
-            rescue => e
-              puts " Skipping table #{table.name}: #{e}"
-              next
-            end
-          end
-          if has_the_geom
-            puts " Updating the_geom_webmercator triggers for table #{table.name}"
-            table.set_trigger_the_geom_webmercator
-          else
-            puts " Skipping table #{table.name}: no 'the_geom' column"
-          end
-        end
       end
     end
 
@@ -395,24 +319,6 @@ namespace :cartodb do
     task :save_users_metadata => :environment do
       User.all.each do |u|
         u.save_metadata
-      end
-    end
-
-    desc 'Drop cache_checkpoint trigger from all tables'
-    task :drop_trigger_cache_checkpoint => :environment do
-      count = User.count
-      printf "Starting cartodb:db:drop_trigger_cache_checkpoint task for %d users\n", count
-      User.all.each_with_index do |user, i|
-        begin
-          user.tables.all.each do |t|
-            if t.has_trigger? 'cache_checkpoint'
-              t.drop_trigger_cache_checkpoint
-            end
-          end
-          printf "OK %-#{20}s (%-#{5}s/%-#{5}s)\n", user.username, i+1, count
-        rescue => e
-          printf "FAIL %-#{20}s (%-#{5}s/%-#{5}s) #{e.message}\n", user.username, i+1, count
-        end
       end
     end
 

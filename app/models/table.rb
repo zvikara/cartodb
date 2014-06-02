@@ -359,10 +359,9 @@ class Table < Sequel::Model(:user_tables)
         user_database.run(%Q{ALTER TABLE "#{self.name}" DROP COLUMN #{aux_cartodb_id_column}})
       end
 
-      self.schema(reload:true)
-      self.cartodbfy
-
       user_database.run(%Q{ALTER TABLE "#{self.name}" ADD PRIMARY KEY (cartodb_id)})
+
+      self.schema(reload:true)
     end
 
   end
@@ -484,12 +483,10 @@ class Table < Sequel::Model(:user_tables)
     unless self.name.blank? || e.message =~ /relation .* already exists/
       @data_import.log << ("Dropping table #{self.name}") if @data_import
       $tables_metadata.del key
-
       self.remove_table_from_user_database
     end
 
     @data_import.log << ("Import Error: #{e.try(:message)}") if @data_import
-
     raise e
   end
 
@@ -1200,78 +1197,13 @@ class Table < Sequel::Model(:user_tables)
   end
 
   def set_triggers
-    set_trigger_update_updated_at
-
-    # NOTE: We're dropping the cache_checkpoint here
-    #       as a poor man's migration path from 2.1.
-    #       Once an official 2.2 is out and a proper
-    #       migration script is written this line can
-    #       be removed. For the record, the actual cache
-    #       (varnish) management is now triggered indirectly
-    #       by the "track_updates" trigger.
-    #
-    drop_trigger_cache_checkpoint
-
-    set_trigger_track_updates
-    set_trigger_check_quota
-  end
-
-  def set_trigger_the_geom_webmercator
-    self.cartodbfy
-  end
-
-  def set_trigger_update_updated_at
-    self.cartodbfy
-  end
-
-  # Drop "cache_checkpoint", if it exists
-  # NOTE: this is for migrating from 2.1
-  def drop_trigger_cache_checkpoint
-    owner.in_database(:as => :superuser).run(<<-TRIGGER
-    DROP TRIGGER IF EXISTS cache_checkpoint ON "#{self.name}";
-TRIGGER
-    )
-  end
-
-  def cartodbfy
-    owner.in_database(:as => :superuser).run("SELECT CDB_CartodbfyTable('#{self.name}')")
-    self.schema(reload:true)
-  end
-
-  # Set a "cache_checkpoint" trigger to invalidate varnish
-  # TODO: drop this trigger, delegate to a trigger on CDB_TableMetadata
-  def set_trigger_cache_checkpoint
-    owner.in_database(:as => :superuser).run(<<-TRIGGER
-    BEGIN;
-    DROP TRIGGER IF EXISTS cache_checkpoint ON "#{self.name}";
-    CREATE TRIGGER cache_checkpoint BEFORE UPDATE OR INSERT OR DELETE OR TRUNCATE ON "#{self.name}" EXECUTE PROCEDURE update_timestamp();
-    COMMIT;
-TRIGGER
-    )
-  end
-
-  # Set a "track_updates" trigger to keep CDB_TableMetadata updated
-  def set_trigger_track_updates
-    owner.in_database(:as => :superuser).run(<<-TRIGGER
-    BEGIN;
-    DROP TRIGGER IF EXISTS track_updates ON "#{self.name}";
-    CREATE trigger track_updates
-      AFTER INSERT OR UPDATE OR DELETE OR TRUNCATE ON "#{self.name}"
-      FOR EACH STATEMENT
-      EXECUTE PROCEDURE cdb_tablemetadata_trigger();
-    COMMIT;
-TRIGGER
-    )
+    # Triggers are set inside cartodbfication
+    owner.in_database(:as => :superuser).run("SELECT cartodb.CDB_CartodbfyTable('#{self.name}')")
   end
 
   # move to C
   def update_table_pg_stats
     owner.in_database[%Q{ANALYZE "#{self.name}";}]
-  end
-
-  # Set quota checking trigger for this table
-  def set_trigger_check_quota
-    self.cartodbfy
   end
 
   def owner

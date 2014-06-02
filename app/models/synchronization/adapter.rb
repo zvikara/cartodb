@@ -28,7 +28,7 @@ module CartoDB
           copy_privileges("public.#{table_name}", result.qualified_table_name)
           copy_indexes("public.#{table_name}", result.qualified_table_name)
           overwrite(table_name, result)
-          cartodbfy(table_name)
+          process_and_save(table_name)
         end
         self
       rescue => exception
@@ -61,9 +61,9 @@ module CartoDB
         drop(result.table_name) if exists?(result.table_name)
       end
 
-      def cartodbfy(table_name)
+      # Performs required transformations to the synchronized table and saves it
+      def process_and_save(table_name)
         table = ::Table.where(name: table_name, user_id: user.id).first
-        #table.migrate_existing_table = table_name
         table.force_schema = true
         table.send :update_updated_at
         table.import_to_cartodb(table_name)
@@ -73,13 +73,12 @@ module CartoDB
         table.schema(reload: true)
         table.reload
         table.send :update_table_pg_stats
-        table.send :cartodbfy
         table.save
         table.send(:invalidate_varnish_cache)
         update_cdb_tablemetadata(table.name)
         database.run("UPDATE #{table_name} SET updated_at = NOW() WHERE cartodb_id IN (SELECT MAX(cartodb_id) from #{table_name})")
       rescue => exception
-        puts "Sync cartodbfy ERROR: #{exception.message}: #{exception.backtrace.join}"
+        puts "Synchronization::Adapter process_and_save() ERROR: #{exception.message}: #{exception.backtrace.join}"
         Rollbar.report_exception(exception)
         table.send(:invalidate_varnish_cache)
       end
