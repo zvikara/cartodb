@@ -22,13 +22,27 @@ module CartoDB
     end
   end
 
+  def self.protocol
+    (Rails.env.production? || Rails.env.staging?) ? 'https' : 'http'
+  end
+
+  def self.port
+    if Rails.env.production? || Rails.env.staging?
+      protocol == 'https' ? 443 : 80
+    elsif Rails.env.development?
+      3000
+    else
+      53716
+    end
+  end
+
   def self.hostname
     @@hostname ||= if Rails.env.production? || Rails.env.staging?
-      "https://#{domain}"
+      "#{protocol}://#{domain}"
     elsif Rails.env.development?
-      "http://#{domain}:3000"
+      "#{protocol}://#{domain}:#{port}"
     else
-      "http://#{domain}:53716"
+      "#{protocol}://#{domain}:#{port}"
     end
   end
 

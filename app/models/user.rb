@@ -1095,10 +1095,9 @@ TRIGGER
 
   # Creates or updates the user's domain data inside his db
   def set_userdb_domain_data
-    # TODO: Use real values
-    domain = username
-    port = 123
-    secure = false
+    domain = username + CartoDB.session_domain
+    port = CartoDB.port
+    secure = (CartoDB.protocol == 'https')
     in_database(:as => :superuser).run(%Q{ SELECT CDB_SetUserDomain('#{domain}', #{port}, #{secure}) })
   end
 end
