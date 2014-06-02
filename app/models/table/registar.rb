@@ -3,6 +3,8 @@
 require_relative '../visualization/member'
 require_relative '../../../services/named-maps-api-wrapper/lib/named-maps-wrapper/exceptions'
 
+# Registers User DB table CREATE/UPDATE/DELETE actions so user_tables (and thus Table model) is properly kept in sync.
+# Intended to be called (through calls to API table_controller -> registar_xxx) by python script from DDL Triggers.
 module CartoDB
   module Table
     class Registar
@@ -11,12 +13,13 @@ module CartoDB
       ACTION_UPDATE = 'UPDATE'
       ACTION_REMOVE = 'REMOVE'
 
+      # @param table_owner User
       def initialize(table_owner)
         @table_owner = table_owner
       end
 
-      # @param table_name
-      # @param table_oid
+      # @param table_name string
+      # @param table_oid integer
       # @return Table
       # @throws RegistarError
       def create(table_name, table_oid)
@@ -34,14 +37,13 @@ module CartoDB
         table
       end
 
-      # @param table_name
-      # @param table_oid
+      # @param table_name string
+      # @param table_oid integer
       # @return Table
       # @throws RegistarError
       def update(table_name, table_oid)
         table = ::Table.where(table_id: table_oid, user_id: @table_owner.id).first
         raise RegistarError.new("CartoDB::Table::Registar update #{table_name} #{table_oid} Table not found") if table.nil?
-
         begin
           table.sync_from_registar = true
           table.name = table_name
@@ -53,8 +55,8 @@ module CartoDB
         table
       end
 
-      # @param table_name
-      # @param table_oid
+      # @param table_name string
+      # @param table_oid integer
       # @return boolean
       # @throws RegistarError
       def remove(table_name, table_oid)
@@ -62,9 +64,9 @@ module CartoDB
         raise RegistarError.new("CartoDB::Table::Registar update #{table_name} #{table_oid} Table not found") if table.nil?
         begin
           member = Visualization::Collection.new.fetch({
-                                                         user_id:  @table_owner.id,
-                                                         type:     Visualization::Member::CANONICAL_TYPE,
-                                                         map_id: table.map_id
+            user_id:  @table_owner.id,
+            type:     Visualization::Member::CANONICAL_TYPE,
+            map_id:   table.map_id
           }).first
 
           return false if member.nil?
@@ -87,7 +89,6 @@ module CartoDB
         end
         true
       end
-
     end
 
     class RegistarError < StandardError; end

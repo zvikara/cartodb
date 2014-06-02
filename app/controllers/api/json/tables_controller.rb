@@ -147,6 +147,10 @@ class Api::Json::TablesController < Api::ApplicationController
 
   private
 
+  # @param action string From CartoDB::Table::Registar::ACTION_xxxxx
+  # @param table_name string
+  # @param table_oid integer
+  # @return JSON (rendered)
   def registar_notify(action, table_name, table_oid)
     result = nil
     registar = CartoDB::Table::Registar.new(current_user)
