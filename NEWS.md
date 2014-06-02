@@ -1,3 +1,8 @@
+2.14.2 ()
+---------
+* New features
+    * Rake (cartodb:db:set_user_domain_function) to setup CDB_UserDomain. Added also upon user creation
+
 * Fixed bugs
     * allow "rectangle" option for marker-type in torque layer
     * now enqueing sync tables who are in state syncing for more than 2 hours (caused by pushing code while syncing a table)
