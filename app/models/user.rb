@@ -834,6 +834,7 @@ $$
     set_database_permissions
     load_cartodb_functions
     rebuild_quota_trigger
+    set_userdb_domain_data
   end
 
   def create_schemas_and_set_permissions
@@ -1090,5 +1091,14 @@ TRIGGER
         raise(response['stderr'])
       end
     end
+  end
+
+  # Creates or updates the user's domain data inside his db
+  def set_userdb_domain_data
+    # TODO: Use real values
+    domain = username
+    port = 123
+    secure = false
+    in_database(:as => :superuser).run(%Q{ SELECT CDB_SetUserDomain('#{domain}', #{port}, #{secure}) })
   end
 end
