@@ -965,6 +965,48 @@ TRIGGER
     )
   end
 
+  def create_table_sync_functions()
+    add_python
+
+    table_sync_critical = Cartodb.config[:table_sync].try(:[],'critical') == true ? 1 : 0
+
+    template=<<-FUNCTION
+CREATE OR REPLACE FUNCTION cdb_table_sync_%{method}(host text, port integer, secure boolean, table_id text, table_name text)
+  RETURNS void AS
+$BODY$
+    critical = %{critical}
+    retry = 5
+
+    table_sync = GD.get('table_sync', None)
+
+    while True:
+        if not table_sync:
+            try:
+                from cartodb import TableSync
+                table_sync = GD['table_sync'] = TableSync(host, port, secure)
+            except:
+                plpy.error("Could not import cartodb.TableSync")
+                break
+        try:
+            table_sync.%{method}(table_id, table_name)
+            break
+        except Exception as e:
+            plpy.warning('TableSync warn: ' + e.message)
+            if not retry:
+                if critical:
+                    plpy.error('TableSync error: ' + e.message)
+                break
+            retry -= 1 # try reconnecting
+    $BODY$
+  LANGUAGE plpythonu VOLATILE
+  COST 100;
+REVOKE ALL ON FUNCTION cdb_table_sync_%{method}(host text, port integer, secure boolean, table_id text, table_name text) FROM PUBLIC;
+FUNCTION
+
+    ['created', 'updated', 'deleted'].each { |m|
+      in_database(:as => :superuser).run(template % {method: m, critical: table_sync_critical})
+    }
+  end
 
   # Cartodb functions
   def load_cartodb_functions(extensions_only=false, files=[])
@@ -973,6 +1015,7 @@ TRIGGER
 
     unless extensions_only
       create_function_invalidate_varnish
+      create_table_sync_functions
       create_trigger_function_update_timestamp
       in_database(:as => :superuser) do |user_database|
         user_database.transaction do
