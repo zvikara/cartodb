@@ -155,6 +155,19 @@ namespace :cartodb do
       end
     end
 
+    desc 'configure CDB_UserDomain on all users'
+    task :set_user_domain_function => :environment do |t, args|
+      puts "Setting CDB_UserDomain for ##{User.count} users"
+      User.all.each_with_index do |user, i|
+        begin
+          user.set_userdb_domain_data
+          puts "OK #{user.id} (#{user.username})"
+        rescue => exception
+          puts "\nERRORED #{user.id} (#{user.username}): #{exception.message}\n"
+        end
+      end
+    end
+
     desc 'reset check quota trigger for a given user'
     task :reset_trigger_check_quota_for_user, [:username] => :environment do |t, args|
       raise 'usage: rake cartodb:db:reset_trigger_check_quota_for_user[username]' if args[:username].blank?

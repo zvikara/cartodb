@@ -1,3 +1,11 @@
+2.14.2 ()
+---------
+* New features
+    * Rake (cartodb:db:set_user_domain_function) to setup CDB_UserDomain. Added also upon user creation
+
+* Fixed bugs
+
+
 2.14.1 (2014-05-28)
 -------------------
 * New features
