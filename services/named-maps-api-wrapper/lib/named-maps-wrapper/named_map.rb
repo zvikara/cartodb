@@ -35,7 +35,7 @@ module CartoDB
           ssl_verifyhost:  parent.verify_cert ? 0 : 2,
           followlocation: true
 					} )
-        raise HTTPResponseError, "#{response.code} #{response.request.url} #{response.body} (POST)" unless response.code == 200
+        raise HTTPResponseError, "CODE:#{response.code} URL:#{response.request.url} RESPONSE:#{response.body} (POST)" unless response.code == 200
 
 				body = ::JSON.parse(response.response_body)
 
@@ -56,7 +56,7 @@ module CartoDB
           followlocation: true
 				} )
 
-        raise HTTPResponseError, "#{response.code} #{response.request.url} #{response.body} (PUT)" unless response.code == 200
+        raise HTTPResponseError, "CODE:#{response.code} URL:#{response.request.url} RESPONSE:#{response.body} (PUT)" unless response.code == 200
         @template
 			end #update
 
@@ -69,7 +69,7 @@ module CartoDB
             ssl_verifyhost: @parent.verify_cert ? 0 : 2,
             followlocation: true
           } )
-        raise HTTPResponseError, "#{response.code} #{response.request.url} #{response.body} (DELETE)" unless response.code == 204
+        raise HTTPResponseError, "CODE:#{response.code} URL:#{response.request.url} RESPONSE:#{response.body} (DELETE)" unless response.code == 204
 			end #delete
 
 			# Url to access a named map's tiles
