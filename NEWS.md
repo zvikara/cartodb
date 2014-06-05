@@ -8,6 +8,7 @@
     * Created a rake task that loads that functions on existing users
         * Existing installations, please run:
         ```
+        $ pip install -r python_requirements.txt # installs cartodb-table-sync library
         $ bundle exec rake cartodb:db:load_table_sync_functions
         ```
 
