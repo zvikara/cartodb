@@ -17,15 +17,15 @@ class Organization < Sequel::Model
 
   def validate
     super
-    validates_presence [:name, :quota_in_bytes]
+    validates_presence [:name, :quota_in_bytes, :seats]
     validates_unique   :name
     validates_format   /^[a-z0-9\-]+$/, :name, message: 'must only contain lowercase letters, numbers & hyphens'
+    validates_integer  :seats
   end
 
   def before_save
     super
     self.updated_at = Time.now
-    raise errors unless valid?
   end
 
   def db_size_in_bytes
