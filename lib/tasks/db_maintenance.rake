@@ -85,6 +85,19 @@ namespace :cartodb do
       end
     end
 
+    desc 'configure TableSync funtions on all users'
+    task :load_table_sync_functions => :environment do
+      puts "Setting TableSync functions for ##{User.count} users"
+      User.all.each_with_index do |user, i|
+        begin
+          user.create_functions_for_table_sync
+          puts "OK %-#{20}s (%-#{4}s/%-#{4}s)\n", user.username, i+1, count
+        rescue => exception
+          puts "FAIL %-#{20}s (%-#{4}s/%-#{4}s) #{e.message}\n", user.username, i+1, count
+        end
+      end
+    end
+
 
     ########################
     # LOAD CARTODB TRIGGERS

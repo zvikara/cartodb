@@ -846,7 +846,7 @@ $$
     load_cartodb_functions
     rebuild_quota_trigger
     create_function_invalidate_varnish
-    set_userdb_domain_data
+    create_functions_for_table_sync
   end
 
   def create_schemas_and_set_permissions
@@ -1142,5 +1142,58 @@ $$;
     port = CartoDB.port
     secure = (CartoDB.protocol == 'https')
     in_database(:as => :superuser).run(%Q{ SELECT CDB_SetUserDomain('#{domain}', #{port}, #{secure}) })
+  end
+
+  def create_functions_for_table_sync
+    add_python
+
+    host = username + CartoDB.session_domain
+    port = CartoDB.port
+    secure = (CartoDB.protocol == 'https') ? 'True' : 'False'
+
+    table_sync_critical = Cartodb.config[:table_sync].try(:[],'critical') == true ? 1 : 0
+
+    template=<<-FUNCTION
+        CREATE OR REPLACE FUNCTION cdb_table_sync_%{method}(table_id text, table_name text)
+          RETURNS void AS
+        $BODY$
+            critical = %{critical}
+            retry = 5
+
+            table_sync = GD.get('table_sync', None)
+
+            while True:
+                if not table_sync:
+                    try:
+                        from cartodb import TableSync
+                        table_sync = GD['table_sync'] = TableSync('%{host}', %{port}, %{secure})
+                    except:
+                        plpy.error("Could not import cartodb.TableSync")
+                        break
+                try:
+                    table_sync.%{method}(table_id, table_name)
+                    break
+                except Exception as e:
+                    plpy.warning('TableSync warn: ' + e.message)
+                    if not retry:
+                        if critical:
+                            plpy.error('TableSync error: ' + e.message)
+                        break
+                    retry -= 1 # try reconnecting
+            $BODY$
+          LANGUAGE plpythonu VOLATILE
+          COST 100;
+        REVOKE ALL ON FUNCTION cdb_table_sync_%{method}(table_id text, table_name text) FROM PUBLIC;
+    FUNCTION
+
+    ['created', 'updated', 'deleted'].each { |m|
+      in_database(:as => :superuser).run(template % {
+          method: m,
+          host: host,
+          port: port,
+          secure: secure,
+          critical: table_sync_critical
+      })
+    }
   end
 end
