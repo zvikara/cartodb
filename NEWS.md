@@ -1,7 +1,15 @@
 2.14.2 ()
 ---------
+* Migration Type (see UPGRADE): Mandatory migration
+
 * New features
     * Rake (cartodb:db:set_user_domain_function) to setup CDB_UserDomain. Added also upon user creation
+    * Added method to create TableSync functions for users
+    * Created a rake task that loads that functions on existing users
+        * Existing installations, please run:
+        ```
+        $ bundle exec rake cartodb:db:load_table_sync_functions
+        ```
 
 * Fixed bugs
     * allow "rectangle" option for marker-type in torque layer
