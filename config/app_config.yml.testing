@@ -197,7 +197,7 @@ test:
   <<: *defaults
   redis:
     host: '127.0.0.1'
-    port: 6335
+    port: <%= 6335 + ENV['TEST_ENV_NUMBER'] %>
   enforce_non_empty_layer_css: false
   api_requests_es_service:
     url: "http://api-calls-service.localhost.lan/search"

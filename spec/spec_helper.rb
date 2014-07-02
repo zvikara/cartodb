@@ -14,7 +14,7 @@ RSpec.configure do |config|
   config.include HelperMethods
 
   config.before(:suite) do
-    CartoDB::RedisTest.up
+    CartoDB::RedisTest.up unless ENV['NO_REDIS']
   end
 
   config.before(:each) do
@@ -44,7 +44,8 @@ RSpec.configure do |config|
   end
 
   config.after(:suite) do
-    CartoDB::RedisTest.down
+   CartoDB::RedisTest.down unless ENV['NO_REDIS']
+
   end
 
 end
