@@ -52,7 +52,7 @@ class ApplicationController < ActionController::Base
   def render_404
     respond_to do |format|
       format.html do
-        render :file => 'public/404.html', :status => 404, :layout => false
+        render :file => "#{Rails.application.config.action_controller.relative_url_root}/pages/404.html", :status => 404, :layout => false
       end
       format.json do
         head :not_found
