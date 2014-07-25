@@ -16,7 +16,7 @@ class SynchronizationOauth < Sequel::Model
 
   def public_values
     Hash[PUBLIC_ATTRIBUTES.map{ |k| [k, (self.send(k) rescue self[k].to_s)] }]
-  end #public_values
+  end
 
   def validate
     super
@@ -33,22 +33,21 @@ class SynchronizationOauth < Sequel::Model
       ).first
       errors.add(:id, ' cannot change user or service, only token') unless (existing_oauth.service == service && existing_oauth.user_id == user_id)
     end
-  end #validate
+  end
 
   def before_save
     super  
     self.updated_at = Time.now
-  end #before_save
+  end
 
   def ==(oauth_object)
     self.id == oauth_object.id
-  end #==
-
+  end
 
   def get_service_datasource
     datasource = CartoDB::Datasources::DatasourcesFactory.get_datasource(service, User.where(id: user_id))
     datasource.token = token unless datasource.nil?
     datasource
-  end #get_service_datasource
+  end
 
 end

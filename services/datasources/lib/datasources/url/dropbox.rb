@@ -32,7 +32,6 @@ module CartoDB
         # @throws UninitializedError
         # @throws MissingConfigurationError
         def initialize(config, user)
-
           raise UninitializedError.new('missing user instance', DATASOURCE_NAME)        if user.nil?
           raise MissingConfigurationError.new('missing app_key', DATASOURCE_NAME)       unless config.include?('app_key')
           raise MissingConfigurationError.new('missing app_secret', DATASOURCE_NAME)    unless config.include?('app_secret')
@@ -47,24 +46,24 @@ module CartoDB
           @access_token = nil
           @auth_flow    = nil
           @client       = nil
-        end #initialize
+        end
 
         # Factory method
-        # @param config : {}
-        # @param user : User
+        # @param config Hash
+        # @param user User
         # @return CartoDB::Synchronizer::FileProviders::Dropbox
         def self.get_new(config, user)
           return new(config, user)
-        end #get_new
+        end
 
         # If will provide a url to download the resource, or requires calling get_resource()
-        # @return bool
+        # @return Boolean
         def providers_download_url?
           false
         end
 
         # Return the url to be displayed or sent the user to to authenticate and get authorization code
-        # @param use_callback_flow : bool
+        # @param use_callback_flow Boolean
         # @throws AuthError
         def get_auth_url(use_callback_flow=true)
           if use_callback_flow
@@ -75,11 +74,11 @@ module CartoDB
           @auth_flow.start(CALLBACK_STATE_DATA_PLACEHOLDER.sub('user', @user.username).sub('service', DATASOURCE_NAME))
         rescue DropboxError, ArgumentError => ex
           raise AuthError.new("get_auth_url(#{use_callback_flow}): #{ex.message}", DATASOURCE_NAME)
-        end #get_auth_url
+        end
 
         # Validate authorization code and store token
-        # @param auth_code : string
-        # @return string : Access token
+        # @param auth_code String
+        # @return String : Access token
         # @throws AuthError
         def validate_auth_code(auth_code)
           @auth_flow = DropboxOAuth2FlowNoRedirect.new(@app_key, @app_secret)
@@ -90,10 +89,10 @@ module CartoDB
           @access_token
         rescue DropboxError, ArgumentError => ex
           raise AuthError.new("validate_auth_code(): #{ex.message}", DATASOURCE_NAME)
-        end #validate_auth_code
+        end
 
         # Validates the authorization callback
-        # @param params : mixed
+        # @param params Hash
         def validate_callback(params)
           session = {csrf_token: params[:state].split('|').first.presence }
           @auth_flow = DropboxOAuth2Flow.new(@app_key, @app_secret, @callback_url, session, :csrf_token)
@@ -104,10 +103,10 @@ module CartoDB
           @access_token
         rescue DropboxError, ArgumentError => ex
           raise AuthError.new("validate_callback(#{params.inspect}): #{ex.message}", DATASOURCE_NAME)
-        end #validate_callback
+        end
 
         # Set the token
-        # @param token string
+        # @param token String
         # @throws TokenExpiredOrInvalidError
         # @throws AuthError
         def token=(token)
@@ -115,16 +114,16 @@ module CartoDB
           @client = DropboxClient.new(@access_token)
         rescue => ex
           handle_error(ex, "token= : #{ex.message}")
-        end #token=
+        end
 
         # Retrieve set token
-        # @return string | nil
+        # @return String | nil
         def token
           @access_token
-        end #token
+        end
 
         # Perform the listing and return results
-        # @param filter Array : (Optional) filter to specify which resources to retrieve. Leave empty for all supported.
+        # @param filter Array (Optional) filter to specify which resources to retrieve. Leave empty for all supported.
         # @return [ { :id, :title, :url, :service } ]
         # @throws TokenExpiredOrInvalidError
         # @throws AuthError
@@ -142,10 +141,10 @@ module CartoDB
           all_results
         rescue => ex
           handle_error(ex, "get_resources_list(): #{ex.message}")
-        end #get_resources_list
+        end
 
         # Retrieves a resource and returns its contents
-        # @param id string
+        # @param id String
         # @return mixed
         # @throws TokenExpiredOrInvalidError
         # @throws AuthError
@@ -155,7 +154,7 @@ module CartoDB
           contents
         rescue => ex
           handle_error(ex, "get_resource() #{id}: #{ex.message}")
-        end #get_resource
+        end
 
         # @param id string
         # @return Hash
@@ -169,16 +168,16 @@ module CartoDB
           item_data.to_hash
         rescue => ex
           handle_error(ex, "get_resource_metadata() #{id}: #{ex.message}")
-        end #get_resource_metadata
+        end
 
         # Retrieves current filters
-        # @return {}
+        # @return Hash
         def filter
           @formats
-        end #filter
+        end
 
         # Sets current filters
-        # @param filter_data {}
+        # @param filter_data Array
         def filter=(filter_data=[])
           @formats = []
           FORMATS_TO_SEARCH_QUERIES.each do |id, queries|
@@ -188,40 +187,41 @@ module CartoDB
               end
             end
           end
-        end #filter=
+        end
 
         # Just return datasource name
-        # @return string
+        # @return String
         def to_s
           DATASOURCE_NAME
         end
 
         # Checks if token is still valid or has been revoked
-        # @return bool
+        # @return Boolean
         # @throws AuthError
         def token_valid?
-        # Any call would do, we just want to see if communicates or refuses the token
+          # Any call would do, we just want to see if communicates or refuses the token
           @client.account_info
           true
         rescue DropboxError => ex
           error_code = ex.http_response.code.to_i
           raise AuthError.new("token_valid? : #{ex.message}") unless (error_code == 401 || error_code == 403)
           false
-        end #token_valid?
+        end
 
         # Revokes current set token
+        # @return Boolean
         def revoke_token
           @client.disable_access_token
           true
         rescue => ex
           raise AuthError.new("revoke_token: #{ex.message}", DATASOURCE_NAME)
-        end #revoke_token
+        end
 
         private
 
         # Handles
         # @param original_exception mixed
-        # @param message string
+        # @param message String
         # @throws TokenExpiredOrInvalidError
         # @throws AuthError
         # @throws mixed
@@ -238,10 +238,10 @@ module CartoDB
           else
             raise original_exception
           end
-        end #handle_error
+        end
 
         # Formats all data to comply with our desired format
-        # @param item_data Hash : Single item returned from Dropbox API
+        # @param item_data Hash Single item returned from Dropbox API
         # @return { :id, :title, :url, :service, :size }
         def format_item_data(item_data)
           filename = item_data.fetch('path').split('/').last
@@ -254,17 +254,17 @@ module CartoDB
             checksum: checksum_of(item_data.fetch('rev')),
             size:     item_data.fetch('bytes').to_i
           }
-        end #format_item_data
+        end
 
         # Calculates a checksum of given input
-        # @param origin string
-        # @return string
+        # @param origin String
+        # @return String
         def checksum_of(origin)
           #noinspection RubyArgCount
           Zlib::crc32(origin).to_s
-        end #checksum_of
+        end
 
-      end #Dropbox
-    end #FileProviders
-  end #Syncronizer
-end #CartoDB
+      end
+    end
+  end
+end
