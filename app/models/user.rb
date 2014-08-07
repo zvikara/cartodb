@@ -121,7 +121,7 @@ class User < Sequel::Model
     rebuild_quota_trigger    if changes.include?(:quota_in_bytes)
     if changes.include?(:account_type) || changes.include?(:disqus_shortname) || changes.include?(:email) || \
        changes.include?(:website) || changes.include?(:name) || changes.include?(:description) || \
-       changes.include?(:twitter_username)
+       changes.include?(:twitter_username) || changes.include?(:username)
       invalidate_varnish_cache(regex: '.*:vizjson')
     end
     if changes.include?(:database_host)
@@ -130,6 +130,31 @@ class User < Sequel::Model
       User.terminate_database_connections(database_name, database_host)
     end
 
+    if changes.include?(:username)
+      reown_mapviews(*previous_changes[:username])
+      reown_layers(*previous_changes[:username])
+      if self.has_organization_enabled?
+        self.organization.users.each{|user| user.reown_layers(*previous_changes[:username])}
+      end
+    end
+  end
+
+  def reown_layers(old_user, new_user)
+    self.maps.each do |map|
+      map.layers.each do |layer|
+        if layer.options['user_name'] && layer.options['user_name'] == old_user
+          layer.options['user_name'] = new_user[1]
+          layer.save
+        end
+      end
+    end
+  end
+
+  def reown_mapviews(old_user, new_user)
+    keys = $users_metadata.KEYS "user:#{old_user}:mapviews:*"
+    keys.each do |key|
+      $users_metadata.RENAME key, key.gsub(/^user:#{old_user}:mapviews:/, "user:#{new_user}:mapviews:")
+    end
   end
 
   def before_destroy

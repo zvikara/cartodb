@@ -752,6 +752,29 @@ describe User do
     doomed_user.destroy
   end
 
+  it "should change all layer owners when renaming user" do
+    renamed_user = create_user :email => 'rename@memplease.com', :username => 'renameme', :password => 'rename'
+    layer = Layer.create(:options => {'user_name' => 'renameme'}, :kind => 'carto')
+    layer.save
+    map = Map.new(user_id: renamed_user.id)
+    map.save
+    map.add_layer(layer)
+    renamed_user.save
+    renamed_user.username = 'renamed'
+    renamed_user.save
+    renamed_user.maps.first.layers.first.options['user_name'].should == 'renamed'
+  end
+
+  it "should rename mapviews when renaming user" do
+    renamed_user = create_user :email => 'rename@memplease.com', :username => 'renameme', :password => 'rename'
+    $users_metadata.SET "user:renameme:mapviews:global", "200"
+    $users_metadata.SET "user:renameme:mapviews:wadus", "248"
+    renamed_user.username = 'renamed'
+    renamed_user.save
+    $users_metadata.GET("user:renamed:mapviews:global").should == "200"
+    $users_metadata.GET("user:renamed:mapviews:wadus").should == "248"
+  end
+
   it "should remove its user tables, layers and data imports after deletion" do
     doomed_user = create_user :email => 'doomed2@example.com', :username => 'doomed2', :password => 'doomed123'
     data_import = DataImport.create(:user_id     => doomed_user.id,
