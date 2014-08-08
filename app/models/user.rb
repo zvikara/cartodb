@@ -98,6 +98,7 @@ class User < Sequel::Model
       self.private_tables_enabled ||= true
       self.sync_tables_enabled ||= true
     end
+    self.old_username = initial_value(:username) if column_changed?(:username)
   end #before_save
 
   def after_create

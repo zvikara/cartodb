@@ -752,6 +752,14 @@ describe User do
     doomed_user.destroy
   end
 
+  it "should keep old_username when renaming user" do
+    renamed_user = create_user :email => 'rename@memplease.com', :username => 'renameme', :password => 'rename'
+    renamed_user.save
+    renamed_user.username = 'renamed'
+    renamed_user.save
+    renamed_user.old_username.should == 'renameme'
+  end
+
   it "should change all layer owners when renaming user" do
     renamed_user = create_user :email => 'rename@memplease.com', :username => 'renameme', :password => 'rename'
     layer = Layer.create(:options => {'user_name' => 'renameme'}, :kind => 'carto')
