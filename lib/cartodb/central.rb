@@ -35,8 +35,8 @@ module Cartodb
       response.parsed_response
     end # get_organization_user
 
-    def create_organization_user(organization_name, user_attributes)
-      options = { body: { user: user_attributes }, basic_auth: @auth, verify: Rails.env.production? }
+    def create_organization_user(organization_name, user_attributes, associate=false)
+      options = { body: { user: user_attributes, associate_existing: associate }, basic_auth: @auth, verify: Rails.env.production? }
 
       response = self.class.post "#{ @host }/api/organizations/#{ organization_name }/users", options
 

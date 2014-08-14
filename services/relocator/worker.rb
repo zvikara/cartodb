@@ -89,7 +89,7 @@ module CartoDB
           return
         end
         user.save
-        user.create_in_central
+        user.associate_in_central
         user.update_in_central
       end # organize
       
