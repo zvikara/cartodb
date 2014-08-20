@@ -67,7 +67,7 @@ module ApplicationHelper
       user_name:                  CartoDB.extract_subdomain(request),
       cartodb_com_hosted:         Cartodb.config[:cartodb_com_hosted],
       account_host:               Cartodb.config[:account_host],
-      dropbox_api_key:            Cartodb.config[:dropbox_api_key],
+      dropbox_api_key:            Cartodb.config.fetch(:dropbox_api_key, nil),
       datasource_search_twitter:  nil,
       max_asset_file_size:        Cartodb.config[:assets]["max_file_size"],
       watcher_ttl:                Cartodb.config[:watcher].try("fetch", 'ttl', 60),

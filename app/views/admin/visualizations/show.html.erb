@@ -6,7 +6,9 @@
     <%= stylesheet_link_tag 'common.css', 'table.css', 'cdb.css', 'map.css', :media => 'all' %>
   <% end %>
 
+  <% unless Cartodb.config[:dropbox_api_key].blank? %>
   <script type="text/javascript" id="dropboxjs" src="//www.dropbox.com/static/api/1/dropins.js" data-app-key="<%= Cartodb.config[:dropbox_api_key] %>"></script>
+  <% end %>
   <script>
     var vis_data = <%=raw @visualization.to_hash.to_json %>
     , user_data = <%=raw current_user.data.to_json.html_safe %>
