@@ -68,15 +68,28 @@ module ApplicationHelper
       cartodb_com_hosted:         Cartodb.config[:cartodb_com_hosted],
       account_host:               Cartodb.config[:account_host],
       dropbox_api_key:            Cartodb.config[:dropbox_api_key],
-      gdrive_api_key:             Cartodb.config[:gdrive]['api_key'],
-      gdrive_app_id:              Cartodb.config[:gdrive]['app_id'],
-      oauth_dropbox:              Cartodb.config[:oauth]['dropbox']['app_key'],
-      oauth_gdrive:               Cartodb.config[:oauth]['gdrive']['client_id'],
       datasource_search_twitter:  nil,
-      tumblr_api_key:             Cartodb.config[:tumblr]['api_key'],
       max_asset_file_size:        Cartodb.config[:assets]["max_file_size"],
       watcher_ttl:                Cartodb.config[:watcher].try("fetch", 'ttl', 60),
     }
+
+    if Cartodb.config[:oauth].present?
+      if Cartodb.config[:oauth]['dropbox'].present?
+        config[:oauth_dropbox] = Cartodb.config[:oauth]['dropbox'].fetch('app_key', nil)
+      end
+      if Cartodb.config[:oauth]['gdrive'].present?
+        config[:oauth_gdrive] = Cartodb.config[:oauth]['gdrive'].fetch('client_id', nil)
+      end
+    end
+
+    if Cartodb.config[:tumblr].present?
+      config[:tumblr_api_key] = Cartodb.config[:tumblr].fetch('api_key', nil)
+    end
+
+    if Cartodb.config[:gdrive].present?
+      config[:gdrive_api_key] = Cartodb.config[:gdrive].fetch('api_key', nil)
+      config[:gdrive_app_id] = Cartodb.config[:gdrive].fetch('app_id', nil)
+    end
 
     if Cartodb.config[:datasource_search].present? && Cartodb.config[:datasource_search]['twitter_search'].present? \
       && Cartodb.config[:datasource_search]['twitter_search']['standard'].present?
