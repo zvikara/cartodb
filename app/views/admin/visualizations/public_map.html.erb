@@ -18,7 +18,7 @@
     <%= stylesheet_link_tag 'embeds/public_map', 'embeds/public_info.css' %>
     <!--[if gt IE 8]><%= stylesheet_link_tag "fonts_ie" %><![endif]-->
 
-    <% if !Rails.env.production? %>
+    <% if !Rails.env.production? || offline_mode? %>
       <%= stylesheet_link_tag 'embeds.css' %>
     <% else %>
       <link rel="stylesheet" href="//cartodb-libs.global.ssl.fastly.net/cartodb.js/v3/themes/css/cartodb.css" />
@@ -111,6 +111,7 @@
               </div>
             </div>
 
+            <% unless offline_mode? %>
             <div class="comments embed-left-col">
               <div class="content">
                 <div id="disqus_thread"></div>
@@ -129,6 +130,7 @@
                 <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript" class="no_script">comments powered by Disqus.</a></noscript>
               </div>
             </div>
+            <% end %>
 
           </div>
         </div>
@@ -160,7 +162,7 @@
       <!-- <script type="text/javascript" src="//maps.google.com/maps/api/js?sensor=false"></script> -->
     <% end %>
 
-    <% if !Rails.env.production? %>
+    <% if !Rails.env.production? || offline_mode? %>
       <%= javascript_include_tag 'cdb.js', 'public_dashboard' %>
     <% else %>
       <script src="//cartodb-libs.global.ssl.fastly.net/cartodb.js/v3/cartodb.js"></script>
@@ -169,6 +171,7 @@
 
     <script>
 
+    <% unless offline_mode? %>
       reset_disqus = function() {
         DISQUS.reset({
           reload: true
@@ -180,6 +183,7 @@
       } else {
         window.addEventListener('orientationchange', reset_disqus);
       }
+    <% end %>
 
       function get_url_params(conversion) {
 
@@ -269,7 +273,7 @@
               opt.https = true; // when auth_token is used tiles should be fetch using https
           <% end %>
 
-          <% if Rails.env.development? || Cartodb.config[:no_cdn] == true %>
+          <% if Rails.env.development? || Cartodb.config[:no_cdn] == true || offline_mode? %>
               opt.no_cdn = true;
           <% end %>
 

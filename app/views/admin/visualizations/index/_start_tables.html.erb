@@ -3,9 +3,11 @@
   <h3 class="margin10">Create your first map in 3 simple steps</h3>
 </div>
 <div class="content">
+  <% unless offline_mode? %>
   <div class="video">
     <div class="iframe"></div>
   </div>
+  <% end %>
   <ul>
     <li>
       <a href="#/import" class="selected">

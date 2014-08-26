@@ -1,5 +1,6 @@
 defaults: &defaults
   debug_assets: true
+  offline_mode: false
   mandatory_keys:     [layer_opts, sql_api, varnish_management, redis, session_domain]
   session_domain:     '.localhost.lan'
   secret_token:       '71c2b25921b84a1cb21c71503ab8fb23'
