@@ -50,8 +50,8 @@ class Layer < Sequel::Model
       style = options.include?('tile_style') ? options['tile_style'] : nil
       if style.nil? || style.strip.empty?
         errors.add(:options, 'Tile style is empty')
-        Statsd.increment('cartodb-com.errors.empty-css')
-        Statsd.increment('cartodb-com.errors.total')
+        Statsd.increment('cartodb-com.errors.empty-css') rescue nil
+        Statsd.increment('cartodb-com.errors.total') rescue nil
       end
     end
   end #validate

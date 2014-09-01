@@ -1064,7 +1064,7 @@ class User < Sequel::Model
   end
 
   def update_gauge(gauge, value)
-    Statsd.gauge("#{metric_key}.#{gauge}", value)
+    Statsd.gauge("#{metric_key}.#{gauge}", value) rescue nil
   rescue
   end
 
