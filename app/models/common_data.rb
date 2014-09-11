@@ -135,9 +135,9 @@ select
             AND relname = meta_dataset.tabname
     ) as rows,
     pg_relation_size(meta_dataset.tabname) size,
-    meta_dataset.created_at,
+    extract(epoch from meta_dataset.created_at)::integer * 1e3,
     (
-        select updated_at
+        select extract(epoch from updated_at)::integer * 1e3
         from cdb_tablemetadata
         where tabname::text = meta_dataset.tabname
     ) as updated_at,
