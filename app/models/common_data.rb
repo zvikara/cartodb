@@ -117,7 +117,11 @@ select
     ) as rows,
     pg_relation_size(meta_dataset.tabname) size,
     meta_dataset.created_at,
-    meta_dataset.updated_at,
+    (
+        select updated_at
+        from cdb_tablemetadata
+        where tabname::text = meta_dataset.tabname
+    ) as updated_at,
     meta_category.name category,
     meta_category.image_url category_image_url
 from meta_dataset, meta_category
