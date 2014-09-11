@@ -11,6 +11,7 @@ describe CommonData do
     @common_data.stubs(:config).with('host').returns('example.com')
     @common_data.stubs(:config).with('api_key').returns('wadus')
     @common_data.stubs(:config).with('format', 'shp').returns('shp')
+    @common_data.stubs(:config).with('cache_endpoint').returns(nil)
   end
 
   after(:all) do
@@ -36,10 +37,18 @@ describe CommonData do
     @common_data.datasets[:categories].size.should eq 3
   end
 
-  it 'should use SQL API V2 for export URLs' do
+  it 'should use SQL API V2 for export URLs if cache_endpoint is nil' do
     stub_valid_api_response
+    @common_data.stubs(:config).with('cache_endpoint').returns(nil)
 
     @common_data.datasets[:datasets].first['url'].should match /^https:\/\/common-data\.example\.com\/api\/v2/
+  end
+
+  it 'should use the configured cache_endpoint host as export URL with the API V1' do
+    stub_valid_api_response
+    @common_data.stubs(:config).with('cache_endpoint').returns('https://example.com')
+
+    @common_data.datasets[:datasets].first['url'].should match /^https:\/\/example\.com\/api\/v1/
   end
 
   def stub_valid_api_response
