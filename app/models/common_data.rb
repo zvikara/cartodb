@@ -43,7 +43,7 @@ class CommonData
       _categories[category][:count] += 1
 
       row.delete('category_image_url')
-      row['url'] = export_url(row['tabname'])
+      row['url'] = export_url(row)
       _datasets << row
     }
 
@@ -67,12 +67,31 @@ class CommonData
     sql_authenticated_api_url sql_api_url(DATASETS_QUERY, 'v1')
   end
 
-  def export_url(table_name)
-    "#{sql_api_url export_query(table_name)}&filename=#{table_name}&format=#{config('format', 'shp')}"
+  def export_url(row)
+    table_name = row['tabname']
+    params = [
+        "filename=#{table_name}",
+        "format=#{config('format', 'shp')}",
+        "buster=#{row['updated_at']}"
+    ]
+    cache_endpoint = config('cache_endpoint')
+    if cache_endpoint
+      "#{sql_cache_url export_query(table_name)}&#{params.join('&')}"
+    else
+      "#{sql_api_url export_query(table_name)}&#{params.join('&')}"
+    end
   end
 
   def sql_api_url(query, version='v2')
-    "#{config('protocol', 'https')}://#{config('username')}.#{config('host')}/api/#{version}/sql?q=#{URI::encode query}"
+    "#{config('protocol', 'https')}://#{config('username')}.#{config('host')}#{path_and_querystring(query, version)}"
+  end
+
+  def sql_cache_url(query, version='v1')
+    "#{config('cache_endpoint')}#{path_and_querystring(query, version)}"
+  end
+
+  def path_and_querystring(query, version='v2')
+    "/api/#{version}/sql?q=#{URI::encode query}"
   end
 
   def sql_authenticated_api_url(api_url)
