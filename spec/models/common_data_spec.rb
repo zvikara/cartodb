@@ -41,14 +41,14 @@ describe CommonData do
     stub_valid_api_response
     @common_data.stubs(:config).with('cache_endpoint').returns(nil)
 
-    @common_data.datasets[:datasets].first['url'].should match /^https:\/\/common-data\.example\.com\/api\/v2/
+    @common_data.datasets[:datasets].first['url'].should match /^https:\/\/common-data\.example\.com\/api\/v2.*&format=shp$/
   end
 
   it 'should use the configured cache_endpoint host as export URL with the API V1' do
     stub_valid_api_response
     @common_data.stubs(:config).with('cache_endpoint').returns('https://example.com')
 
-    @common_data.datasets[:datasets].first['url'].should match /^https:\/\/example\.com\/api\/v1/
+    @common_data.datasets[:datasets].first['url'].should match /^https:\/\/example\.com\/api\/v1.*&buster=[0-9]*$/
   end
 
   def stub_valid_api_response

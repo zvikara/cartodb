@@ -71,11 +71,11 @@ class CommonData
     table_name = row['tabname']
     params = [
         "filename=#{table_name}",
-        "format=#{config('format', 'shp')}",
-        "buster=#{row['updated_at']}"
+        "format=#{config('format', 'shp')}"
     ]
     cache_endpoint = config('cache_endpoint')
     if cache_endpoint
+      params << "buster=#{row['updated_at']}"
       "#{sql_cache_url export_query(table_name)}&#{params.join('&')}"
     else
       "#{sql_api_url export_query(table_name)}&#{params.join('&')}"
