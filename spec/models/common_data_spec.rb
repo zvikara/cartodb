@@ -70,96 +70,96 @@ describe CommonData do
     {
       "name": "New York Counties",
       "tabname": "counties_ny",
-      "description": "All the New York counties",
+      "description": "All the New York counties.",
       "source": null,
       "license": null,
       "rows": 62,
       "size": 65536,
-      "created_at": "2014-09-08T12:09:46Z",
-      "updated_at": "2014-09-08T12:14:12Z",
+      "created_at": 1410178186000,
+      "updated_at": 1409229809000,
       "category": "Administrative regions",
       "category_image_url": "https://s3.amazonaws.com/common-data.cartodb.net/administrative.png"
     },
     {
       "name": "World borders",
       "tabname": "world_borders",
-      "description": "World countries borders",
+      "description": "World countries borders.",
       "source": null,
       "license": null,
       "rows": 246,
       "size": 450560,
-      "created_at": "2014-09-08T10:15:54Z",
-      "updated_at": "2014-09-08T12:14:23Z",
+      "created_at": 1410171354000,
+      "updated_at": 1409210751000,
       "category": "Administrative regions",
       "category_image_url": "https://s3.amazonaws.com/common-data.cartodb.net/administrative.png"
     },
     {
       "name": "Urban Areas",
       "tabname": "table_50m_urban_area",
-      "description": "Areas of human habitation",
-      "source": "[Naturalearthdata](http://naturalearthdata.com)",
+      "description": "Areas of human habitation.",
+      "source": "[Natural Earth Data](http://naturalearthdata.com)",
       "license": null,
       "rows": 2143,
       "size": 1556480,
-      "created_at": "2014-09-08T12:15:09Z",
-      "updated_at": "2014-09-08T12:16:00Z",
+      "created_at": 1410178510000,
+      "updated_at": 1409229825000,
       "category": "Cultural datasets",
       "category_image_url": "https://s3.amazonaws.com/common-data.cartodb.net/cultural_bkg.jpg"
     },
     {
       "name": "Populated places",
       "tabname": "ne_10m_populated_places_simple",
-      "description": "Most populated places",
-      "source": "[Naturalearthdata](http://naturalearthdata.com)",
+      "description": "Most populated places.",
+      "source": "[Natural Earth Data](http://naturalearthdata.com)",
       "license": null,
       "rows": 7313,
       "size": 2588672,
-      "created_at": "2014-09-08T12:16:29Z",
-      "updated_at": "2014-09-08T12:17:01Z",
+      "created_at": 1410178589000,
+      "updated_at": 1409932153000,
       "category": "Cultural datasets",
       "category_image_url": "https://s3.amazonaws.com/common-data.cartodb.net/cultural_bkg.jpg"
     },
     {
       "name": "World rivers",
       "tabname": "table_50m_rivers_lake_centerlines_with_scale_r",
-      "description": "Most of the world rivers",
-      "source": "[Naturalearthdata](http://naturalearthdata.com)",
+      "description": "Most of the world rivers.",
+      "source": "[Natural Earth Data](http://naturalearthdata.com)",
       "license": null,
       "rows": 1611,
       "size": 1163264,
-      "created_at": "2014-09-08T12:17:18Z",
-      "updated_at": "2014-09-08T12:18:16Z",
-      "category": "Cities buildings, roads and POI’s",
+      "created_at": 1410178639000,
+      "updated_at": 1409229812000,
+      "category": "Physical datasets",
       "category_image_url": "https://s3.amazonaws.com/common-data.cartodb.net/natural_bkg.jpg"
     },
     {
       "name": "NYC Subways",
       "tabname": "nyc_subway_entrance",
-      "description": "All the NYC Subways",
+      "description": "All the NYC Subways.",
       "source": null,
       "license": null,
       "rows": 1904,
       "size": 417792,
-      "created_at": "2014-09-08T12:18:36Z",
-      "updated_at": "2014-09-08T12:19:28Z",
+      "created_at": 1410178717000,
+      "updated_at": 1409210947000,
       "category": "Cultural datasets",
       "category_image_url": "https://s3.amazonaws.com/common-data.cartodb.net/cultural_bkg.jpg"
     },
     {
       "name": "European countries",
       "tabname": "european_countries",
-      "description": "European countries geometries",
+      "description": "European countries geometries.",
       "source": null,
       "license": null,
       "rows": 46,
       "size": 245760,
-      "created_at": "2014-09-08T12:19:41Z",
-      "updated_at": "2014-09-08T12:20:27Z",
+      "created_at": 1410178782000,
+      "updated_at": 1409229822000,
       "category": "Administrative regions",
       "category_image_url": "https://s3.amazonaws.com/common-data.cartodb.net/administrative.png"
     }
   ],
-  "time": 0.013,
+  "time": 0.009,
   "fields": {
     "name": {
       "type": "string"
@@ -183,10 +183,10 @@ describe CommonData do
       "type": "number"
     },
     "created_at": {
-      "type": "date"
+      "type": "number"
     },
     "updated_at": {
-      "type": "date"
+      "type": "number"
     },
     "category": {
       "type": "string"
