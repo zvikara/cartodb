@@ -696,6 +696,27 @@ namespace :cartodb do
       u.set_api_calls_from_es({:force_update => true})
       puts "New API Calls from ES: #{u.get_es_api_calls_from_redis}"
     end
+
+    desc 'Load all map views from ES to redis'
+    task :load_all_map_views_from_es => :environment do
+      map_views = UserStats.get_all_users_map_views(from_date, to_date)
+      map_views_count = map_views.length
+      i = 1
+      map_views.each do |u, periods|
+        begin
+          user = User.where(:username => u).first   
+          puts "** Loading map views for user #{u} (#{i}/#{map_views_count})"
+          puts "Old map views from ES: #{user.get_es_api_calls_from_redis}"
+          periods.each do |timestamp, count|
+            user.write_map_view_period_to_redis(timestamp, count)
+          end
+          puts "New map views from ES: #{user.get_es_api_calls_from_redis}"
+        rescue
+          puts "ERROR: Problem loading map views for user #{u}"
+        end
+        i = i + 1
+      end
+    end
     
     desc "Create new organization with owner"
     task :create_new_organization_with_owner => :environment do

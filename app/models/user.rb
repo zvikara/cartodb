@@ -788,24 +788,7 @@ class User < Sequel::Model
     yesterday = Date.today - 1
     from_date = DateTime.new(yesterday.year, yesterday.month, yesterday.day, 0, 0, 0).strftime("%Q")
     to_date = DateTime.now.strftime("%Q")
-    request_body = Cartodb.config[:api_requests_es_service]['body'].dup
-    request_url = Cartodb.config[:api_requests_es_service]['url'].dup
-    request_body.gsub!("$CDB_SUBDOMAIN$", self.username)
-    request_body.gsub!("\"$FROM$\"", from_date)
-    request_body.gsub!("\"$TO$\"", to_date)
-    request = Typhoeus::Request.new(
-      request_url,
-      method: :post,
-      headers: { "Content-Type" => "application/json" },
-      body: request_body
-    )
-    response = request.run
-    if response.code != 200
-      raise(response.body)
-    end
-    values = {}
-    JSON.parse(response.body)["aggregations"]["0"]["buckets"].each {|i| values[i['key']] = i['doc_count']}
-    return values
+    UserStats.get_single_user_map_views(self.username, from_date, to_date)
   end
 
   # Get the final api calls from ES and write them to redis
@@ -813,9 +796,13 @@ class User < Sequel::Model
     if options[:force_update]
       es_api_calls = get_api_calls_from_es
       es_api_calls.each do |d,v|
-        $users_metadata.ZADD "user:#{self.username}:mapviews_es:global", v, DateTime.strptime(d.to_s, "%Q").strftime("%Y%m%d")
+        write_map_view_period_to_redis(d, v)
       end
     end
+  end
+
+  def write_map_view_period_to_redis(timestamp, count)
+    $users_metadata.ZADD "user:#{self.username}:mapviews_es:global", count, DateTime.strptime(timestamp.to_s, "%Q").strftime("%Y%m%d")
   end
 
   # Legacy stats fetching
