@@ -248,9 +248,6 @@ CartoDB::Application.routes.draw do
     post '(/u/:user_domain)/api/v1/geocodings'                                => 'geocodings#create',               as: :api_v1_geocodings_create
     put  '(/u/:user_domain)/api/v1/geocodings/:id'                            => 'geocodings#update',               as: :api_v1_geocodings_update
 
-    # Geocoder Direct API v1
-    get  '(/u/:user_domain)/api/v1/geocoder/:kind' => 'geocoder_api#geocode', as: :api_v1_geocoder_geocode
-
     # Visualizations
     get     '(/u/:user_domain)/api/v1/viz/tags'                           => 'tags#index',                     as: :api_v1_visualizations_tags_index
     get     '(/u/:user_domain)/api/v1/viz'                                => 'visualizations#index',           as: :api_v1_visualizations_index
@@ -300,6 +297,11 @@ CartoDB::Application.routes.draw do
     # WMS
     get '(/u/:user_domain)/api/v2/wms' => 'wms#proxy', as: :api_v2_wms_proxy
 
+  end
+
+  scope :module => 'api', :defaults => { :format => 'json' } do
+    # Geocoder Direct API v1
+    get  '(/u/:user_domain)/api/v1/geocoder/:kind' => 'geocoder_api#geocode', as: :api_v1_geocoder_geocode
   end
 
   namespace :superadmin do
