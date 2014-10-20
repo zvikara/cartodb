@@ -42,6 +42,7 @@ WORKING_SPECS_5 = \
   spec/requests/api/imports_spec.rb \
   spec/connectors/importer_spec.rb \
   spec/requests/api/geocodings_spec.rb \
+  spec/requests/api/geocoder_spec.rb \
   services/importer/spec/unit/url_translator/osm_spec.rb \
   services/importer/spec/unit/url_translator/osm2_spec.rb \
   services/importer/spec/unit/mail_notifier_spec.rb \
