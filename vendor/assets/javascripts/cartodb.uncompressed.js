@@ -1,6 +1,6 @@
-// cartodb.js version: 3.11.17-dev
+// cartodb.js version: 3.11.18-dev
 // uncompressed version: cartodb.uncompressed.js
-// sha: f5e2de48a3bd252bc6e469925293d86c39741c7f
+// sha: 4e403e101d200a2f8b511d63ec54e94d7c3542ee
 (function() {
   var root = this;
 
@@ -11122,7 +11122,7 @@ L.Map.include({
 
 
 }(window, document));
-/* wax - 7.0.0dev10 - v6.0.4-154-ge12d473 */
+/* wax - 7.0.1 - v6.0.4-157-gfdefcd0 */
 
 
 !function (name, context, definition) {
@@ -14222,9 +14222,13 @@ wax.interaction = function() {
             // but also wax.u.eventoffset will have failed, since this touch
             // event doesn't have coordinates
             interaction.click(e, _d);
-        } else if (evt.type === "MSPointerMove" || evt.type === "MSPointerUp") {
+        } else if (pos) {
+          // If pos is not defined means wax can't calculate event position,
+          // So next cases aren't possible.
+
+          if (evt.type === "MSPointerMove" || evt.type === "MSPointerUp") {
             interaction.click(evt, pos);
-        } else if (Math.round(pos.y / tol) === Math.round(_d.y / tol) &&
+          } else if (Math.round(pos.y / tol) === Math.round(_d.y / tol) &&
             Math.round(pos.x / tol) === Math.round(_d.x / tol)) {
             // Contain the event data in a closure.
             // Ignore double-clicks by ignoring clicks within 300ms of
@@ -14237,7 +14241,10 @@ wax.interaction = function() {
             } else {
               killTimeout();
             }
+          }
+
         }
+
         return onUp;
     }
 
@@ -20698,7 +20705,7 @@ this.LZMA = LZMA;
 
     var cdb = root.cdb = {};
 
-    cdb.VERSION = '3.11.17-dev';
+    cdb.VERSION = '3.11.18-dev';
     cdb.DEBUG = false;
 
     cdb.CARTOCSS_VERSIONS = {
@@ -26782,7 +26789,8 @@ function Map(options) {
     cors: this.isCORSSupported(),
     btoa: this.isBtoaSupported() ? this._encodeBase64Native : this._encodeBase64,
     MAX_GET_SIZE: 2033,
-    force_cors: false
+    force_cors: false,
+    instanciateCallback: '_cdbc'
   });
 
   this.layerToken = null;
@@ -28093,7 +28101,8 @@ CartoDBLayerCommon.prototype = {
 
   _clearInteraction: function() {
     for(var i in this.interactionEnabled) {
-      if(this.interactionEnabled[i]) {
+      if (this.interactionEnabled.hasOwnProperty(i) &&
+        this.interactionEnabled[i]) {
         this.setInteraction(i, false);
       }
     }
@@ -28101,9 +28110,10 @@ CartoDBLayerCommon.prototype = {
 
   _reloadInteraction: function() {
     for(var i in this.interactionEnabled) {
-      if(this.interactionEnabled[i]) {
-        this.setInteraction(i, false);
-        this.setInteraction(i, true);
+      if (this.interactionEnabled.hasOwnProperty(i) &&
+        this.interactionEnabled[i]) {
+          this.setInteraction(i, false);
+          this.setInteraction(i, true);
       }
     }
   },
@@ -31786,7 +31796,7 @@ var Vis = cdb.core.View.extend({
   },
 
   _addOverlays: function(overlays, options) {
-   
+
     // Sort the overlays by its internal order
     overlays = _.sortBy(overlays, function(overlay){ return overlay.order == null ? 1000 : overlay.order; });
 
@@ -32220,7 +32230,8 @@ var Vis = cdb.core.View.extend({
     if (!this.mobile_enabled && opt.search) {
       if (!search_overlay('search')) {
         vizjson.overlays.push({
-           type: "search"
+           type: "search",
+           order: 3
         });
       }
     }
@@ -32258,6 +32269,7 @@ var Vis = cdb.core.View.extend({
       if (!search_overlay('share')) {
         vizjson.overlays.push({
           type: "share",
+          order: 2,
           url: vizjson.url
         });
       }
