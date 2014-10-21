@@ -1,6 +1,6 @@
 // cartodb.js version: 3.11.18-dev
 // uncompressed version: cartodb.uncompressed.js
-// sha: 4e403e101d200a2f8b511d63ec54e94d7c3542ee
+// sha: 686c32c075682dea754a456685fbdf3c23633080
 (function() {
   var root = this;
 
@@ -26780,6 +26780,7 @@ cdb.ui.common.FullScreen = cdb.core.View.extend({
 
 });
 
+
 function Map(options) {
   var self = this;
   this.options = _.defaults(options, {
@@ -26790,7 +26791,9 @@ function Map(options) {
     btoa: this.isBtoaSupported() ? this._encodeBase64Native : this._encodeBase64,
     MAX_GET_SIZE: 2033,
     force_cors: false,
-    instanciateCallback: '_cdbc'
+    instanciateCallback: function() {
+      return '_cdbc_' + cartodb.uniqueCallbackName(JSON.stringify(self.toJSON()));
+    }
   });
 
   this.layerToken = null;
@@ -27942,6 +27945,7 @@ SubLayer.prototype = {
 // give events capabilitues
 _.extend(SubLayer.prototype, Backbone.Events);
 
+
 /*
  *  common functions for cartodb connector
  */
@@ -28209,6 +28213,39 @@ cdb.geo.common.CartoDBLogo = {
     },( timeout || 0 ));
   }
 };
+
+/** utility methods to calculate hash */
+cartodb._makeCRCTable = function() {
+    var c;
+    var crcTable = [];
+    for(var n = 0; n < 256; ++n){
+        c = n;
+        for(var k = 0; k < 8; ++k){
+            c = ((c&1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1));
+        }
+        crcTable[n] = c;
+    }
+    return crcTable;
+}
+
+cartodb.crc32 = function(str) {
+    var crcTable = cartodb._crcTable || (cartodb._crcTable = cartodb._makeCRCTable());
+    var crc = 0 ^ (-1);
+
+    for (var i = 0, l = str.length; i < l; ++i ) {
+        crc = (crc >>> 8) ^ crcTable[(crc ^ str.charCodeAt(i)) & 0xFF];
+    }
+
+    return (crc ^ (-1)) >>> 0;
+};
+
+cartodb.uniqueCallbackName = function(str) {
+  cartodb._callback_c = cartodb._callback_c || 0;
+  ++cartodb._callback_c;
+  return cartodb.crc32(str) + "_" + cartodb._callback_c;
+};
+
+
 
 (function() {
   /**
