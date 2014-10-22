@@ -1,11 +1,13 @@
-#encoding: UTF-8
+# encoding: UTF-8
 require Rails.root.join('services', 'sql-api', 'sql_api')
+require_relative 'geocoder_sql_generator.rb'
 
 class Api::GeocoderController < ApplicationController
   respond_to :json, :geojson
 
   def initialize
     @sql_api = CartoDB::SQLApi.new(username: 'geocoding')
+    @sql_generator = GeocoderSqlGenerator.new
   end
 
   def geocode
@@ -20,13 +22,13 @@ class Api::GeocoderController < ApplicationController
   end
 
   def geocode_admin0
-    sql = "SELECT (geocode_admin0_polygons(#{params[:q]})).*"
+    sql = @sql_generator.get params[:kind], params[:q]
     @sql_api.fetch(sql, params[:format])
     render json: @sql_api.parsed_response
   end
 
   def geocode_ipaddress
-    sql = "WITH geo_function AS (SELECT (geocode_ip(Array['179.60.192.33'])).*) SELECT q, geom as the_geom, success FROM geo_function"
+    sql = @sql_generator.get params[:kind], params[:q]
     @sql_api.fetch(sql, params[:format])
     respond_to do |format|
       format.json { render json: @sql_api.parsed_response }
