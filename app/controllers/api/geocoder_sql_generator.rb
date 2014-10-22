@@ -7,7 +7,7 @@ class GeocoderSqlGenerator
   def get(params)
     sql_params = sql_query_args_from(params[:q])
     case params[:kind]
-      when 'namedplaces'
+      when 'namedplace'
         #TODO there are several possible formats for this query
         "SELECT (geocode_namedplace(#{sql_params})).*"
       when 'admin0'

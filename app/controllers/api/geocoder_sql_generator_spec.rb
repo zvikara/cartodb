@@ -13,7 +13,7 @@ describe GeocoderSqlGenerator do
     #TODO there are several formats for this, take them into account
     it 'gets the correct query for namedplaces' do
       params = {
-        kind: 'namedplaces',
+        kind: 'namedplace',
         q: '["sunapee"], "USA"'
       }
       @sql_generator.get(params).should == "SELECT (geocode_namedplace(Array['sunapee'],'USA')).*"
