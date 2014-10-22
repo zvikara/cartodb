@@ -24,6 +24,7 @@ class GeocoderSqlGenerator
   end
 
   #TODO move somewhere
+  #TODO this parser is good enough but not perfect: restrict to 1 level arrays, strings and nulls
   def sql_query_args_from(query_args)
     json_query_args = '[' + query_args + ']'
     args = JSON.parse(json_query_args)

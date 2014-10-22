@@ -21,4 +21,25 @@ class Api::GeocoderController < ApplicationController
     end
   end
 
+  def available_geometries
+    # TODO this is a naive implementation, but it should work ftm
+    # see geocodings_controller.rb
+    case params[:kind]
+      when 'namedplace'
+        render json: ['point']
+      when 'admin0'
+        render json: ['polygon']
+      when 'admin1'
+        render json: ['polygon']
+      when 'postalcode'
+        render json: ['point', 'polygon']
+      when 'ipaddress'
+        render json: ['point']
+      when 'high-resolution'
+        render json: ['point']
+      else
+        raise 'Kind not supported'
+      end
+  end
+
 end
