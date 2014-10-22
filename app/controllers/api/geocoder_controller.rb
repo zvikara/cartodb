@@ -1,7 +1,7 @@
 #encoding: UTF-8
 require Rails.root.join('services', 'sql-api', 'sql_api')
 
-class Api::GeocoderApiController < ApplicationController
+class Api::GeocoderController < ApplicationController
   respond_to :json, :geojson
 
   def initialize

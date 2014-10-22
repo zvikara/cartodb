@@ -301,7 +301,7 @@ CartoDB::Application.routes.draw do
 
   scope :module => 'api', :defaults => { :format => 'json' } do
     # Geocoder Direct API v1
-    get  '(/u/:user_domain)/api/v1/geocoder/:kind' => 'geocoder_api#geocode', as: :api_v1_geocoder_geocode
+    get  '(/u/:user_domain)/api/v1/geocoder/:kind' => 'geocoder#geocode', as: :api_v1_geocoder_geocode
   end
 
   namespace :superadmin do
