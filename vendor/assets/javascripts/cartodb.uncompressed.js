@@ -1,6 +1,6 @@
 // cartodb.js version: 3.11.18-dev
 // uncompressed version: cartodb.uncompressed.js
-// sha: 686c32c075682dea754a456685fbdf3c23633080
+// sha: 156705bad3e0b131b3a59507a85e04ded58fa71a
 (function() {
   var root = this;
 
@@ -27944,6 +27944,39 @@ SubLayer.prototype = {
 
 // give events capabilitues
 _.extend(SubLayer.prototype, Backbone.Events);
+
+/** utility methods to calculate hash */
+cartodb._makeCRCTable = function() {
+    var c;
+    var crcTable = [];
+    for(var n = 0; n < 256; ++n){
+        c = n;
+        for(var k = 0; k < 8; ++k){
+            c = ((c&1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1));
+        }
+        crcTable[n] = c;
+    }
+    return crcTable;
+}
+
+cartodb.crc32 = function(str) {
+    var crcTable = cartodb._crcTable || (cartodb._crcTable = cartodb._makeCRCTable());
+    var crc = 0 ^ (-1);
+
+    for (var i = 0, l = str.length; i < l; ++i ) {
+        crc = (crc >>> 8) ^ crcTable[(crc ^ str.charCodeAt(i)) & 0xFF];
+    }
+
+    return (crc ^ (-1)) >>> 0;
+};
+
+cartodb.uniqueCallbackName = function(str) {
+  cartodb._callback_c = cartodb._callback_c || 0;
+  ++cartodb._callback_c;
+  return cartodb.crc32(str) + "_" + cartodb._callback_c;
+};
+
+
 
 
 /*
