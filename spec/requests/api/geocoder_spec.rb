@@ -23,7 +23,7 @@ describe "Geocoder Direct API" do
       params = {
         :api_key => @user.api_key,
         :kind => 'admin0',
-        :q => "Array['Japan', 'China']"
+        :q => '["Japan", "China"]'
       }
       get_json api_v1_geocoder_geocode_url(params) do |response|
         response.status.should be_success
@@ -39,7 +39,7 @@ describe "Geocoder Direct API" do
       params = {
         :api_key => @user.api_key,
         :kind => 'ipaddress',
-        :q => "Array['179.60.192.33']"
+        :q => '["179.60.192.33"]'
       }
       get_json api_v1_geocoder_geocode_url(params) do |response|
         response.status.should be_success
@@ -55,7 +55,7 @@ describe "Geocoder Direct API" do
       params = {
         :api_key => @user.api_key,
         :kind => 'ipaddress',
-        :q => "Array['179.60.192.33']",
+        :q => '["179.60.192.33"]',
         :format => 'geojson'
       }
       get_json api_v1_geocoder_geocode_url(params) do |response|
