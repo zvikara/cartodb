@@ -42,4 +42,17 @@ class Api::GeocoderController < ApplicationController
       end
   end
 
+  def estimation
+    case params[:kind]
+      when 'namedplace', 'admin0', 'admin1', 'postalcode', 'ipaddress'
+        render json: 0
+      when 'high-resolution'
+      query = ::JSON.parse('[' + params[:q] + ']')
+        raise 'Invalid params' unless query[0].class == Array
+        render json: query[0].length
+      else
+        raise 'Kind not supported'
+    end
+  end
+
 end

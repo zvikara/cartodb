@@ -86,7 +86,38 @@ describe "Geocoder Direct API" do
         response.status.should be_success
         response.body.should eq ['point', 'polygon']
       end
+    end
+  end
 
+
+  describe 'GET /api/v1/geocoder/{kind}/estimation' do
+    it 'returns 0 for free geocodings' do
+      get api_v1_geocoder_estimation_url({kind:'namedplace'}) do |response|
+        response.status.should be_success
+        response.body.should eq 0
+      end
+      get api_v1_geocoder_estimation_url({kind:'namedplace', q:'["Sunapee", "New York City"], "USA"'}) do |response|
+        response.status.should be_success
+        response.body.should eq 0
+      end
+      get api_v1_geocoder_estimation_url({kind:'admin1', q:'["Sunapee", "New York City"], "USA"'}) do |response|
+        response.status.should be_success
+        response.body.should eq 0
+      end
+    end
+
+    it 'returns the number of points for high-resolution' do
+      query = [
+        ['236 5th Avenue', '2880 Broadway'],
+        nil,
+        ['New York City', 'New York City'],
+        'USA'
+      ]
+      params = {kind:'high-resolution', :q => ::JSON.generate(query)}
+      get api_v1_geocoder_estimation_url(params) do |response|
+        response.status.should be_success
+        response.body.should eq 2
+      end
     end
   end
 
