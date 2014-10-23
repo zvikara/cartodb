@@ -39,7 +39,7 @@ describe "Geocoder Direct API" do
         :kind => 'ipaddress',
         :q => '["179.60.192.33"]'
       }
-      get api_v1_geocoder_geocode_url(params) do |response|
+      get_json api_v1_geocoder_geocode_url(params) do |response|
         response.status.should be_success
         response.headers['Content-Type'].should eq 'application/json; charset=utf-8'
         response.body[:total_rows].should eq 1
@@ -55,7 +55,7 @@ describe "Geocoder Direct API" do
         :q => '["179.60.192.33"]',
         :format => 'geojson'
       }
-      get api_v1_geocoder_geocode_url(params) do |response|
+      get_json api_v1_geocoder_geocode_url(params) do |response|
         response.status.should be_success
         response.headers['Content-Type'].should eq 'application/vnd.geo+json; charset=utf-8'
       end
@@ -67,22 +67,22 @@ describe "Geocoder Direct API" do
   describe 'GET /api/v1/geocoder/{kind}/available_geometries' do
     it 'returns available geometries for different kinds' do
 
-      get api_v1_geocoder_available_geometries_url({kind:'namedplace'}) do |response|
+      get_json api_v1_geocoder_available_geometries_url({kind:'namedplace'}) do |response|
         response.status.should be_success
         response.body.should eq ['point']
       end
 
-      get api_v1_geocoder_available_geometries_url({kind:'admin0'}) do |response|
+      get_json api_v1_geocoder_available_geometries_url({kind:'admin0'}) do |response|
         response.status.should be_success
         response.body.should eq ['polygon']
       end
 
-      get api_v1_geocoder_available_geometries_url({kind:'admin1'}) do |response|
+      get_json api_v1_geocoder_available_geometries_url({kind:'admin1'}) do |response|
         response.status.should be_success
         response.body.should eq ['polygon']
       end
 
-      get api_v1_geocoder_available_geometries_url({kind:'postalcode'}) do |response|
+      get_json api_v1_geocoder_available_geometries_url({kind:'postalcode'}) do |response|
         response.status.should be_success
         response.body.should eq ['point', 'polygon']
       end
@@ -92,29 +92,23 @@ describe "Geocoder Direct API" do
 
   describe 'GET /api/v1/geocoder/{kind}/estimation' do
     it 'returns 0 for free geocodings' do
-      get api_v1_geocoder_estimation_url({kind:'namedplace'}) do |response|
+      get_json api_v1_geocoder_estimation_url({kind:'namedplace'}) do |response|
         response.status.should be_success
         response.body.should eq 0
       end
-      get api_v1_geocoder_estimation_url({kind:'namedplace', q:'["Sunapee", "New York City"], "USA"'}) do |response|
+      get_json api_v1_geocoder_estimation_url({kind:'namedplace', q:'["Sunapee", "New York City"], "USA"'}) do |response|
         response.status.should be_success
         response.body.should eq 0
       end
-      get api_v1_geocoder_estimation_url({kind:'admin1', q:'["Sunapee", "New York City"], "USA"'}) do |response|
+      get_json api_v1_geocoder_estimation_url({kind:'admin1', q:'["Sunapee", "New York City"], "USA"'}) do |response|
         response.status.should be_success
         response.body.should eq 0
       end
     end
 
     it 'returns the number of points for high-resolution' do
-      query = [
-        ['236 5th Avenue', '2880 Broadway'],
-        nil,
-        ['New York City', 'New York City'],
-        'USA'
-      ]
-      params = {kind:'high-resolution', :q => ::JSON.generate(query)}
-      get api_v1_geocoder_estimation_url(params) do |response|
+      params = {kind:'high-resolution', :q => '["236 5th Avenue","2880 Broadway"],null,["New York City","New York City"],"USA"'}
+      get_json api_v1_geocoder_estimation_url(params) do |response|
         response.status.should be_success
         response.body.should eq 2
       end
