@@ -115,4 +115,27 @@ describe "Geocoder Direct API" do
     end
   end
 
+
+  describe 'GET /api/v1/geocoder/credit' do
+    it 'requires api authentication' do
+      get_json api_v1_geocoder_credit_url do |response|
+        response.status.should == 401
+        response.body.should == {}
+      end
+    end
+
+    it 'returns a hash with usage, quota, price, hard_limit' do
+      params = {api_key: @user.api_key}
+      get_json api_v1_geocoder_credit_url(params) do |response|
+        response.status.should be_success
+        response.body.should == {
+          current_monthly_usage: 0,
+          monthly_quota: 1000,
+          block_price: 1500,
+          hard_limit: true
+        }
+      end
+    end
+  end
+
 end

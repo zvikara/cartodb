@@ -301,6 +301,7 @@ CartoDB::Application.routes.draw do
 
   scope :module => 'api' do
     # Geocoder Direct API v1
+    get  '(/u/:user_domain)/api/v1/geocoder/credit' => 'geocoder#credit', as: :api_v1_geocoder_credit
     get  '(/u/:user_domain)/api/v1/geocoder/:kind' => 'geocoder#geocode', as: :api_v1_geocoder_geocode
     get  '(/u/:user_domain)/api/v1/geocoder/:kind/available_geometries' => 'geocoder#available_geometries', as: :api_v1_geocoder_available_geometries
     get  '(/u/:user_domain)/api/v1/geocoder/:kind/estimation' => 'geocoder#estimation', as: :api_v1_geocoder_estimation

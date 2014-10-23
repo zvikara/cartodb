@@ -61,4 +61,15 @@ class Api::GeocoderController < ApplicationController
     end
   end
 
+  def credit
+    api_authorization_required
+    geocoding_data = current_user.data[:geocoding]
+    render json: {
+      current_monthly_usage: geocoding_data[:monthly_use],
+      monthly_quota: geocoding_data[:quota],
+      block_price: geocoding_data[:block_price],
+      hard_limit: geocoding_data[:hard_limit]
+    }
+  end
+
 end
