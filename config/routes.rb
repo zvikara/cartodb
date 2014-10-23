@@ -299,7 +299,7 @@ CartoDB::Application.routes.draw do
 
   end
 
-  scope :module => 'api', :defaults => { :format => 'json' } do
+  scope :module => 'api' do
     # Geocoder Direct API v1
     get  '(/u/:user_domain)/api/v1/geocoder/:kind' => 'geocoder#geocode', as: :api_v1_geocoder_geocode
     get  '(/u/:user_domain)/api/v1/geocoder/:kind/available_geometries' => 'geocoder#available_geometries', as: :api_v1_geocoder_available_geometries

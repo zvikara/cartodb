@@ -16,7 +16,8 @@ describe GeocoderSqlGenerator do
         kind: 'namedplace',
         q: '["sunapee"], "USA"'
       }
-      @sql_generator.get(params).should == "SELECT (geocode_namedplace(Array['sunapee'],'USA')).*"
+      @sql_generator.get(params).should ==
+        "WITH geo_function AS (SELECT (geocode_namedplace(Array['sunapee'],'USA')).*) SELECT q, geom AS the_geom, success FROM geo_function"
     end
 
     it 'gets the correct query for admin0' do
@@ -24,7 +25,8 @@ describe GeocoderSqlGenerator do
         kind: 'admin0',
         q: '["Japan", "China"]'
       }
-      @sql_generator.get(params).should == "SELECT (geocode_admin0_polygons(Array['Japan','China'])).*"
+      @sql_generator.get(params).should ==
+        "WITH geo_function AS (SELECT (geocode_admin0_polygons(Array['Japan','China'])).*) SELECT q, geom AS the_geom, success FROM geo_function"
     end
 
     it 'gets the correct query for admin1' do
@@ -32,7 +34,8 @@ describe GeocoderSqlGenerator do
         kind: 'admin1',
         q: '["New Jersey", "Comunidad de Madrid"], ["USA", "Spain"]'
       }
-      @sql_generator.get(params).should == "SELECT (geocode_admin1_polygons(Array['New Jersey','Comunidad de Madrid'],Array['USA','Spain'])).*"
+      @sql_generator.get(params).should ==
+        "WITH geo_function AS (SELECT (geocode_admin1_polygons(Array['New Jersey','Comunidad de Madrid'],Array['USA','Spain'])).*) SELECT q, geom as the_geom, success FROM geo_function"
     end
 
     it 'gets the correct query for postalcode' do
@@ -41,7 +44,7 @@ describe GeocoderSqlGenerator do
         kind: 'postalcode',
         q: '["10013","11201","03782"]'
       }
-      expected_sql = "SELECT (geocode_postalcode_points(Array['10013','11201','03782'])).*"
+      expected_sql = "WITH geo_function AS (SELECT (geocode_postalcode_points(Array['10013','11201','03782'])).*) SELECT q, geom as the_geom, success FROM geo_function"
       @sql_generator.get(params).should == expected_sql
     end
 

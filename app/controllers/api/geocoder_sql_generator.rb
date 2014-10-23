@@ -9,15 +9,15 @@ class GeocoderSqlGenerator
     case params[:kind]
       when 'namedplace'
         #TODO there are several possible formats for this query
-        "SELECT (geocode_namedplace(#{sql_params})).*"
+        "WITH geo_function AS (SELECT (geocode_namedplace(#{sql_params})).*) SELECT q, geom AS the_geom, success FROM geo_function"
       when 'admin0'
-        "SELECT (geocode_admin0_polygons(#{sql_params})).*"
+        "WITH geo_function AS (SELECT (geocode_admin0_polygons(#{sql_params})).*) SELECT q, geom AS the_geom, success FROM geo_function"
       when 'ipaddress'
         "WITH geo_function AS (SELECT (geocode_ip(#{sql_params})).*) SELECT q, geom as the_geom, success FROM geo_function"
       when 'admin1'
-        "SELECT (geocode_admin1_polygons(#{sql_params})).*"
+        "WITH geo_function AS (SELECT (geocode_admin1_polygons(#{sql_params})).*) SELECT q, geom as the_geom, success FROM geo_function"
       when 'postalcode'
-        "SELECT (geocode_postalcode_points(#{sql_params})).*"
+        "WITH geo_function AS (SELECT (geocode_postalcode_points(#{sql_params})).*) SELECT q, geom as the_geom, success FROM geo_function"
       else
         raise 'Invalid kind'
     end

@@ -4,6 +4,12 @@ require_relative 'geocoder_sql_generator.rb'
 
 class Api::GeocoderController < ApplicationController
   respond_to :json, :geojson
+  before_filter :default_format_json
+
+  def default_format_json
+    request.format = 'json' unless params[:format]
+    request.format = 'geojson' if params[:format].downcase == 'geojson'
+  end
 
   def initialize
     @sql_api = CartoDB::SQLApi.new(username: 'geocoding')
@@ -12,11 +18,11 @@ class Api::GeocoderController < ApplicationController
 
   def geocode
     sql = @sql_generator.get params
+    format = params[:format].downcase
     @sql_api.fetch(sql, params[:format])
     respond_to do |format|
       #TODO add more formats: csv, shp, svg, kml
       format.json { render json: @sql_api.parsed_response }
-      #TODO SQL API doc says it is format=GeoJSON
       format.geojson { render json: @sql_api.parsed_response }
     end
   end
