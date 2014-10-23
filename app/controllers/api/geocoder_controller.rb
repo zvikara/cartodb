@@ -3,12 +3,11 @@ require Rails.root.join('services', 'sql-api', 'sql_api')
 require_relative 'geocoder_sql_generator.rb'
 
 class Api::GeocoderController < ApplicationController
-  respond_to :json, :geojson
-  before_filter :default_format_json
+  respond_to :geojson, :json
+  before_filter :default_format_geojson
 
-  def default_format_json
-    request.format = 'json' unless params[:format]
-    request.format = 'geojson' if params[:format].downcase == 'geojson'
+  def default_format_geojson
+    request.format = 'geojson' unless params[:format]
   end
 
   def initialize
@@ -18,7 +17,6 @@ class Api::GeocoderController < ApplicationController
 
   def geocode
     sql = @sql_generator.get params
-    format = params[:format].downcase
     @sql_api.fetch(sql, params[:format])
     respond_to do |format|
       #TODO add more formats: csv, shp, svg, kml

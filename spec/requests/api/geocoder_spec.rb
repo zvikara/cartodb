@@ -41,11 +41,17 @@ describe "Geocoder Direct API" do
       }
       get_json api_v1_geocoder_geocode_url(params) do |response|
         response.status.should be_success
-        response.headers['Content-Type'].should eq 'application/json; charset=utf-8'
-        response.body[:total_rows].should eq 1
-        response.body[:fields].should == {
-          'q' => {'type' => 'string'}, 'the_geom' => {'type' => 'geometry'}, 'success' => {'type' => 'boolean'}
+        response.headers['Content-Type'].should eq 'application/vnd.geo+json; charset=utf-8'
+
+        # Bear in mind these tests are quite coupled to data in geocoding account
+        response.body.should == {
+          :type=>"FeatureCollection",
+          :features=>
+          [{"type"=>"Feature",
+             "geometry"=>{"type"=>"Point", "coordinates"=>[-122.1822, 37.4538]},
+             "properties"=>{"q"=>"179.60.192.33", "success"=>true}}]
         }
+
       end
     end
 
@@ -53,11 +59,11 @@ describe "Geocoder Direct API" do
       params = {
         :kind => 'ipaddress',
         :q => '["179.60.192.33"]',
-        :format => 'geojson'
+        :format => 'json'
       }
       get_json api_v1_geocoder_geocode_url(params) do |response|
         response.status.should be_success
-        response.headers['Content-Type'].should eq 'application/vnd.geo+json; charset=utf-8'
+        response.headers['Content-Type'].should eq 'application/json; charset=utf-8'
       end
     end
 
@@ -119,7 +125,7 @@ describe "Geocoder Direct API" do
   describe 'GET /api/v1/geocoder/credit' do
     it 'requires api authentication' do
       get_json api_v1_geocoder_credit_url do |response|
-        response.status.should == 401
+        response.status.should == 406
         response.body.should == {}
       end
     end
