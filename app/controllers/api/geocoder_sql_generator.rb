@@ -5,23 +5,48 @@ require 'json'
 #TODO move to proper namespace and location
 class GeocoderSqlGenerator
   def get(params)
-    sql_params = sql_query_args_from(params[:q])
+    #sql_params = sql_query_args_from(params[:q])
     case params[:kind]
-      when 'namedplace'
-        #TODO there are several possible formats for this query
-        "WITH geo_function AS (SELECT (geocode_namedplace(#{sql_params})).*) SELECT q, geom AS the_geom, success FROM geo_function"
-      when 'admin0'
-        "WITH geo_function AS (SELECT (geocode_admin0_polygons(#{sql_params})).*) SELECT q, geom AS the_geom, success FROM geo_function"
-      when 'ipaddress'
-        "WITH geo_function AS (SELECT (geocode_ip(#{sql_params})).*) SELECT q, geom as the_geom, success FROM geo_function"
-      when 'admin1'
-        "WITH geo_function AS (SELECT (geocode_admin1_polygons(#{sql_params})).*) SELECT q, geom as the_geom, success FROM geo_function"
-      when 'postalcode'
-        "WITH geo_function AS (SELECT (geocode_postalcode_points(#{sql_params})).*) SELECT q, geom as the_geom, success FROM geo_function"
-      else
-        raise 'Invalid kind'
+    when 'namedplace'
+      #TODO there are several possible formats for this query
+      "WITH geo_function AS (SELECT (geocode_namedplace(#{sql_params})).*) SELECT q, geom AS the_geom, success FROM geo_function"
+    when 'admin0'
+      begin
+        name_object = ::JSON.parse(params[:name])
+        name = to_sql(name_object)
+      rescue JSON::ParserError
+        # Assume it is a plain string
+        name = "Array['" + params[:name] + "']"
+      end
+      #TODO assert it is either a string, null or an array of strings
+      #TODO convert to [str] if it is a str
+      "WITH geo_function AS (SELECT (geocode_admin0_polygons(#{name})).*) SELECT q as name, geom AS the_geom, success FROM geo_function"
+    when 'ipaddress'
+      "WITH geo_function AS (SELECT (geocode_ip(#{sql_params})).*) SELECT q, geom as the_geom, success FROM geo_function"
+    when 'admin1'
+      "WITH geo_function AS (SELECT (geocode_admin1_polygons(#{sql_params})).*) SELECT q, geom as the_geom, success FROM geo_function"
+    when 'postalcode'
+      "WITH geo_function AS (SELECT (geocode_postalcode_points(#{sql_params})).*) SELECT q, geom as the_geom, success FROM geo_function"
+    else
+      raise 'Invalid kind'
     end
   end
+
+  def to_sql(obj)
+    result = ''
+    case obj
+    when NilClass
+      result << 'null'
+    when String
+      result << "'" + obj + "'"
+    when Array
+      result << 'Array[' + obj.map { |i| to_sql(i) }.join(',') + ']'
+    else
+      raise 'Invalid query param'
+    end
+    result
+  end
+
 
   #TODO move somewhere
   #TODO this parser is good enough but not perfect: restrict to 1 level arrays, strings and nulls
@@ -31,12 +56,12 @@ class GeocoderSqlGenerator
     raise 'Invalid query args' unless args.class == Array
     sql_args = args.reduce([]) do |result, arg|
       case arg
-        when Array
-          result << 'Array[' + arg.map { |i| "'" + i + "'"}.join(',') + ']'
-        when String
-          result << "'" + arg + "'"
-        else
-          raise 'Invalid query args'
+      when Array
+        result << 'Array[' + arg.map { |i| "'" + i + "'"}.join(',') + ']'
+      when String
+        result << "'" + arg + "'"
+      else
+        raise 'Invalid query args'
       end
     end
     sql_args.join(',')

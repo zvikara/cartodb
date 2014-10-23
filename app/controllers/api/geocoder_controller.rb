@@ -18,10 +18,12 @@ class Api::GeocoderController < ApplicationController
   def geocode
     sql = @sql_generator.get params
     @sql_api.fetch(sql, params[:format])
+    return_data = @sql_api.parsed_response
+
     respond_to do |format|
       #TODO add more formats: csv, shp, svg, kml
-      format.json { render json: @sql_api.parsed_response }
-      format.geojson { render json: @sql_api.parsed_response }
+      format.json { render json: return_data }
+      format.geojson { render json: return_data }
     end
   end
 
@@ -43,7 +45,7 @@ class Api::GeocoderController < ApplicationController
         render json: ['point']
       else
         raise 'Kind not supported'
-      end
+    end
   end
 
   def estimation
