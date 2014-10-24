@@ -22,7 +22,7 @@ describe "Geocoder Direct API" do
     it 'geocodes admin0' do
       params = {
         :kind => 'admin0',
-        :q => '["Japan", "China"]'
+        :name => '["Japan", "China"]'
       }
       get api_v1_geocoder_geocode_url(params) do |response|
         response.status.should be_success
@@ -37,7 +37,7 @@ describe "Geocoder Direct API" do
     it 'geocodes ipaddress' do
       params = {
         :kind => 'ipaddress',
-        :q => '["179.60.192.33"]'
+        :ip => '179.60.192.33'
       }
       get_json api_v1_geocoder_geocode_url(params) do |response|
         response.status.should be_success
@@ -49,7 +49,7 @@ describe "Geocoder Direct API" do
           :features=>
           [{"type"=>"Feature",
              "geometry"=>{"type"=>"Point", "coordinates"=>[-122.1822, 37.4538]},
-             "properties"=>{"q"=>"179.60.192.33", "success"=>true}}]
+             "properties"=>{"ip"=>"179.60.192.33", "success"=>true}}]
         }
 
       end
@@ -58,7 +58,7 @@ describe "Geocoder Direct API" do
     it 'honors format param' do
       params = {
         :kind => 'ipaddress',
-        :q => '["179.60.192.33"]',
+        :ip => '179.60.192.33',
         :format => 'json'
       }
       get_json api_v1_geocoder_geocode_url(params) do |response|
