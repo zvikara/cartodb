@@ -1,10 +1,10 @@
 # encoding: UTF-8
 require_relative 'geocoder_sql_generator.rb'
 
-describe GeocoderSqlGenerator do
+describe Api::GeocoderSqlGenerator do
 
   before(:all) do
-    @sql_generator = GeocoderSqlGenerator.new
+    @sql_generator = Api::GeocoderSqlGenerator.new
   end
 
 

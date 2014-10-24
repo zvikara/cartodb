@@ -1,6 +1,5 @@
 # encoding: UTF-8
 require Rails.root.join('services', 'sql-api', 'sql_api')
-require_relative 'geocoder_sql_generator.rb'
 
 class Api::GeocoderController < ApplicationController
   respond_to :geojson, :json
@@ -12,7 +11,7 @@ class Api::GeocoderController < ApplicationController
 
   def initialize
     @sql_api = CartoDB::SQLApi.new(username: 'geocoding')
-    @sql_generator = GeocoderSqlGenerator.new
+    @sql_generator = Api::GeocoderSqlGenerator.new
   end
 
   def geocode
