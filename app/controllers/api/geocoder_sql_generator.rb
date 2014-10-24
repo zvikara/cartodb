@@ -8,8 +8,14 @@ class GeocoderSqlGenerator
     #sql_params = sql_query_args_from(params[:q])
     case params[:kind]
     when 'namedplace'
-      #TODO there are several possible formats for this query
-      "WITH geo_function AS (SELECT (geocode_namedplace(#{sql_params})).*) SELECT q, geom AS the_geom, success FROM geo_function"
+      # E.g.: place=["Portland", "Portland", "New York City"]&admin1=["Maine", "Oregon", null]&country=["", null, "United States"]
+      allowed_types = {
+        place: [String, Array],
+        admin1: [String, Array, NilClass],
+        country: [String, Array, NilClass]
+      }
+      sql_params = get_sql_params_from params, allowed_types
+      "WITH geo_function AS (SELECT (geocode_namedplace(#{sql_params})).*) SELECT q AS place, a1 AS admin1, c AS country, geom AS the_geom, success FROM geo_function"
     when 'admin0'
       begin
         name_object = ::JSON.parse(params[:name])
@@ -39,6 +45,28 @@ class GeocoderSqlGenerator
     end
   end
 
+
+  # TODO tests
+  def get_sql_params_from(params, allowed_types)
+    sql_params = []
+    allowed_types.each do |name, types|
+      str = params[name]
+      obj = ::JSON.parse(str)
+      types.include? obj.class or raise 'Invalid param type'
+
+      # Arrays must be of primitive, allowed types
+      if obj.class == Array then
+        obj.each do |x|
+          (types - [Array]).include? x.class or raise "Invalid array, #{name}=#{str}"
+        end
+      end
+
+      sql_params << to_sql(obj)
+    end
+    sql_params.join(',')
+  end
+
+  # TODO tests
   def to_sql(obj)
     result = ''
     case obj
@@ -57,6 +85,7 @@ class GeocoderSqlGenerator
 
   #TODO move somewhere
   #TODO this parser is good enough but not perfect: restrict to 1 level arrays, strings and nulls
+  #TODO delete (shouldn't be used)
   def sql_query_args_from(query_args)
     json_query_args = '[' + query_args + ']'
     args = JSON.parse(json_query_args)
