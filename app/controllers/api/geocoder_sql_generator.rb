@@ -51,7 +51,7 @@ module Api
         end
       when 'ipaddress'
         allowed_types = {
-          ip: [String, Array]
+          ip: [Array]
         }
         sql_params = get_sql_params_from params, allowed_types
         "WITH geo_function AS (SELECT (geocode_ip(#{sql_params})).*) SELECT q AS ip, geom AS the_geom, success FROM geo_function"
