@@ -22,7 +22,14 @@ class GeocoderSqlGenerator
       #TODO convert to [str] if it is a str
       "WITH geo_function AS (SELECT (geocode_admin0_polygons(#{name})).*) SELECT q as name, geom AS the_geom, success FROM geo_function"
     when 'ipaddress'
-      "WITH geo_function AS (SELECT (geocode_ip(#{sql_params})).*) SELECT q, geom as the_geom, success FROM geo_function"
+      begin
+        ip_object = ::JSON.parse(params[:ip])
+        ip = to_sql(ip_object)
+      rescue JSON::ParserError
+        # Assume it is a plain string
+        ip = "Array['" + params[:ip] + "']"
+      end
+      "WITH geo_function AS (SELECT (geocode_ip(#{ip})).*) SELECT q as ip, geom as the_geom, success FROM geo_function"
     when 'admin1'
       "WITH geo_function AS (SELECT (geocode_admin1_polygons(#{sql_params})).*) SELECT q, geom as the_geom, success FROM geo_function"
     when 'postalcode'
