@@ -237,18 +237,8 @@ div.dropdown.basemap {
       &.nokia_satellite_day .thumb   { background-image: url("https://1.maps.nlp.nokia.com/maptile/2.1/maptile/newest/satellite.day/6/30/24/256/png?token=A7tBPacePg9Mj_zghvKt9Q&app_id=KuYppsdXZznpffJsKT24"); }
       &.nokia_hybrid_day .thumb      { background-image: url("https://1.maps.nlp.nokia.com/maptile/2.1/maptile/newest/hybrid.day/6/30/24/256/png?token=A7tBPacePg9Mj_zghvKt9Q&app_id=KuYppsdXZznpffJsKT24"); }
 
-      &.dark_roadmap .thumb {
-        background-size:auto;
-        @include map-sprite(gmaps_dark_roadmap);
-      }
-
       a .thumb { background-size:auto; }
 
-      &.gray_roadmap .thumb { @include map-sprite(gmaps_gray_roadmap); }
-      &.roadmap .thumb      { @include map-sprite(gmaps_roadmap); }
-      &.terrain .thumb      { @include map-sprite(gmaps_terrain); }
-      &.satellite .thumb    { @include map-sprite(gmaps_satellite); }
-      &.hybrid .thumb       { @include map-sprite(gmaps_hybrid); }
       &.add .thumb          { @include map-sprite(plus); } 
       &.pattern .thumb      { @include elements-sprite(image_fill, $offset-x:5px, $offset-y:7px); }
 
