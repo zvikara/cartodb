@@ -92,19 +92,28 @@ module CartoDB
         old_timeout = connection.fetch("SHOW statement_timeout;").first[:statement_timeout]
         statement_timeout = '180min'
 
+        n_rows = connection.execute(%Q{select count(1) from #{qualified_table_name}})
+
         connection.transaction do
           connection.run("SET statement_timeout TO '#{statement_timeout}';")
 
+          # TODO: refactor this if it works
+          # INFO: for huge tables it might be more expensive creating a new column than updating in one single query. 
+          # After increasing timeout dramatically we want to check this
           begin
-            CartoDB::Importer2::QueryBatcher::execute(
-              connection,
-              @query_generator.copy_results_to_table_query,
-              qualified_table_name,
-              nil, # use default logger
-              'InternalGeocoder::copy_results_to_table',
-              false, # do not capture exceptions,
-              batch_size
-            )
+            if n_rows < 4000000
+              CartoDB::Importer2::QueryBatcher::execute(
+                connection,
+                @query_generator.copy_results_to_table_query,
+                qualified_table_name,
+                nil, # use default logger
+                'InternalGeocoder::copy_results_to_table',
+                false, # do not capture exceptions,
+                batch_size
+              )
+            else
+              connection.execute(@query_generator.copy_results_to_table_query)
+            end
           ensure
             connection.run("SET statement_timeout TO '#{old_timeout}';")
           end
