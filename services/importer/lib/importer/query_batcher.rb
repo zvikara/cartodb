@@ -84,7 +84,7 @@ module CartoDB
 
       def self.add_processed_column(db, table_name, column_name)
         db.run(%Q{ALTER TABLE #{table_name} SET (autovacuum_enabled = FALSE, toast.autovacuum_enabled = FALSE);})
-        db.run(%Q{ALTER TABLE #{table_name} ADD #{column_name} BOOLEAN default false;})
+        db.run(make_query_exception_safe("ALTER TABLE #{table_name} ADD #{column_name} BOOLEAN default false\;", 'duplicate_column'))
         db.run(%Q{CREATE INDEX idx_#{column_name} ON #{table_name} (#{column_name});})
         db.run(%Q{ALTER TABLE #{table_name} SET (autovacuum_enabled = TRUE, toast.autovacuum_enabled = TRUE);})
       end
@@ -94,6 +94,12 @@ module CartoDB
          ALTER TABLE #{table_name} DROP #{column_name};
         })
       end # self.remove_processed_column
+
+      private
+
+      def self.make_query_exception_safe(query, sql_exception)
+        %Q{DO $$ BEGIN BEGIN #{query} EXCEPTION WHEN #{sql_exception} THEN RAISE notice 'Catched #{sql_exception} at #{query}'; END; END; $$}
+      end
 
     end #QueryBatcher
 
