@@ -1,0 +1,77 @@
+/**
+ *  Static Image dialog styles
+ */
+
+@import "compass/css3/box-sizing";
+@import "compass/css3/opacity";
+@import "compass/css3/images";
+@import "compass/css3/transition";
+@import "common/form-elements";
+@import "common/mixins";
+
+.static_image_dialog {
+
+  @include default-form-info();
+  @include default-input();
+  @include default-textarea();
+
+  // Sections
+  div.content {
+    padding: 22px 40px 40px 40px;
+  }
+
+  div.foot  {
+    padding: 0 40px 35px 40px!important;
+    border:none!important;
+  }
+
+  .row {
+    margin: 0 0 20px 0;
+  }
+
+  .row label {
+    padding: 0;
+  }
+
+  .row.row-2 input[type="text"] {
+    margin: 0 10px 0 0;
+    @include inline-block();
+  }
+
+  .row.row-2 .input_field:last-child input[type="text"] {
+    margin: 0;
+  }
+
+  input[type="text"] {
+    @include box-sizing(border-box);
+    width:410px;
+    padding:14px 11px;
+  }
+
+  .input_field.zoom {
+    width: 140px;
+  }
+
+  .input_field.xxs input[type="text"] {
+    width: 54px;
+  }
+
+  .input_field.xs input[type="text"] {
+    width: 60px;
+  }
+
+  .input_field.s input[type="text"] {
+    width: 140px;
+  }
+
+  .input_field.m input[type="text"] {
+    width: 140px;
+  }
+
+  label {
+    display:block;
+    margin:0 0 7px 0;
+    padding: 0;
+  }
+
+}

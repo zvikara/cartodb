@@ -94,6 +94,12 @@ div.dropdown.map_options_dropdown {
         @include map-sprite(map_options_legends);
       }
 
+      &.generate_image:before {
+        top: 12px;
+        width: 12px; height: 12px;
+        @include map-sprite(map_options_photo); 
+      }
+
       &:first-child { 
         padding-top: 0;
         &:before { top: 2px; }
