@@ -25,53 +25,30 @@
     border:none!important;
   }
 
-  .row {
-    margin: 0 0 20px 0;
-  }
-
   .row label {
     padding: 0;
   }
 
-  .row.row-2 input[type="text"] {
-    margin: 0 10px 0 0;
-    @include inline-block();
-  }
-
-  .row.row-2 .input_field:last-child input[type="text"] {
-    margin: 0;
+  .row .input_field {
+    margin: 0 20px 0 0;
   }
 
   input[type="text"] {
     @include box-sizing(border-box);
-    width:410px;
+    @include inline-block();
+    width: 70px;
     padding:14px 11px;
-  }
-
-  .input_field.zoom {
-    width: 140px;
-  }
-
-  .input_field.xxs input[type="text"] {
-    width: 54px;
-  }
-
-  .input_field.xs input[type="text"] {
-    width: 60px;
-  }
-
-  .input_field.s input[type="text"] {
-    width: 140px;
-  }
-
-  .input_field.m input[type="text"] {
-    width: 140px;
+    margin: 0;
   }
 
   label {
     display:block;
     margin:0 0 7px 0;
     padding: 0;
+  }
+
+  .unit {
+    color: #ccc;
   }
 
 }
