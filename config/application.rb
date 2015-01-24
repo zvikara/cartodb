@@ -94,6 +94,7 @@ module CartoDB
       fonts_ie.css
       front.css
 
+      new_keys.css
       keys.css
       leaflet.css
       map.css

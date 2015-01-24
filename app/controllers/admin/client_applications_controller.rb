@@ -13,6 +13,11 @@ class Admin::ClientApplicationsController < ApplicationController
   end
 
   def api_key
+    view =  current_user.has_feature_flag?('new_dashboard') ? 'new-keys' : 'api_key'
+
+    respond_to do |format|
+      format.html { render view, layout: 'application' }
+    end
   end
 
   def regenerate_api_key
