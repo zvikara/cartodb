@@ -1,7 +1,6 @@
 // cartodb.js version: 3.12.0
 // uncompressed version: cartodb.uncompressed.js
-// sha: de6698d40123c7a4f5268e2b01c4e5b9bd37d326
-
+// sha: 7500c0ce1fcc17945f1d2d66be7cb6e7b57b5a7a
 (function() {
   var root = this;
 
@@ -11123,7 +11122,7 @@ L.Map.include({
 
 
 }(window, document));
-/* wax - 7.0.1 - v6.0.4-163-g2c1797b */
+/* wax - 7.0.1 - v6.0.4-168-g416a567 */
 
 
 !function (name, context, definition) {
@@ -14083,7 +14082,11 @@ wax.interaction = function() {
         detach,
         parent,
         map,
-        tileGrid;
+        tileGrid,
+        // google maps sends touchmove and click at the same time 
+        // most of the time when an user taps the screen, see onUp 
+        // for more information
+        _discardTouchMove = false;
 
     var defaultEvents = {
         mousemove: onMove,
@@ -14245,6 +14248,11 @@ wax.interaction = function() {
             interaction.click(evt, pos);
           } else if (Math.round(pos.y / tol) === Math.round(_d.y / tol) &&
             Math.round(pos.x / tol) === Math.round(_d.x / tol)) {
+            // if mousemove and click are sent at the same time this code
+            // will not trigger click event because less than 150ms pass between
+            // those events.
+            // Because of that this flag discards touchMove
+            if (_discardTouchMove && evt.type === 'touchmove') return onUp;
             // Contain the event data in a closure.
             // Ignore double-clicks by ignoring clicks within 300ms of
             // each other.
@@ -14261,6 +14269,12 @@ wax.interaction = function() {
         }
 
         return onUp;
+    }
+
+    interaction.discardTouchMove = function(_) {
+      if (!arguments.length) return _discardTouchMove;
+      _discardTouchMove = _;
+      return interaction;
     }
 
     // Handle a click event. Takes a second
@@ -14903,6 +14917,7 @@ wax.g.interaction = function() {
     return wax.interaction()
         .attach(attach)
         .detach(detach)
+        .discardTouchMove(true)
         .parent(function() {
           return map.getDiv();
         })
@@ -20738,6 +20753,7 @@ this.LZMA = LZMA;
 
     root.cdb.config = {};
     root.cdb.core = {};
+    root.cdb.image = {};
     root.cdb.geo = {};
     root.cdb.geo.ui = {};
     root.cdb.geo.geocoder = {};
@@ -20824,6 +20840,7 @@ this.LZMA = LZMA;
         'ui/common/dropdown.js',
 
         'vis/vis.js',
+        'vis/image.js',
         'vis/overlays.js',
         'vis/layers.js',
 
@@ -23168,7 +23185,51 @@ cdb.geo.ui.Image = cdb.geo.ui.Text.extend({
       backgroundColor: rgbaCol
     });
 
+    var url = this.model.get("extra").url;
+
+    this._loadImage(url)
+
     this.$el.find("img").css({ width: boxWidth });
+
+  },
+
+  _loadImage: function(url) {
+
+    var self = this;
+
+    var success = function() {
+      self._onLoadSuccess(url);
+    };
+
+    var error = function() {
+      self._onLoadError(url);
+    };
+
+    $("<img/>")
+    .load(success)
+    .error(error)
+    .attr("src", url);
+
+  },
+
+  _onLoadError: function(url) {
+    this.$el.addClass('error');
+  },
+
+  _onLoadSuccess: function(url) {
+
+    var style     = this.model.get("style");
+    var boxWidth  = style["box-width"];
+    var extra     = this.model.get("extra");
+    var img       = "<img src='" + url + "' style='width: " + boxWidth + "px'/>";
+
+    extra.rendered_text = img;
+
+    this.model.set({ extra: extra }, { silent: true });
+
+    this.$text.html(img);
+
+    this.show();
 
   },
 
@@ -23176,7 +23237,10 @@ cdb.geo.ui.Image = cdb.geo.ui.Text.extend({
 
     var content = this.model.get("extra").rendered_text;
 
-    if (this.model.get("extra").has_default_image) content = '<img src="' + this.model.get("extra").public_default_image_url + '" />';
+    if (this.model.get("extra").has_default_image) {
+      var url = this.model.get("extra").public_default_image_url;
+      content = '<img src="' + url + '" />';
+    }
 
     this.$el.html(this.template(_.extend(this.model.attributes, { content: content })));
 
@@ -23187,9 +23251,7 @@ cdb.geo.ui.Image = cdb.geo.ui.Text.extend({
     setTimeout(function() {
       self._applyStyle();
       self._place();
-      self.show();
-    }, 900);
-
+    }, 500);
 
     return this;
 
@@ -26184,42 +26246,23 @@ cdb.geo.ui.SlidesController = cdb.core.View.extend({
 
   initialize: function() {
     this.slidesCount = this.options.transitions.length;
+    this.visualization = this.options.visualization;
+    this.slides = this.visualization.slides;
   },
 
   _prev: function(e) {
-
     if (e) this.killEvent(e);
-    
-    var currentSlide = this.options.slides.state();
-
-    if (currentSlide > 0) {
-      currentSlide--;
-    } else {
-      currentSlide = this.options.transitions.length;
-    }
-
-    this.options.slides.go(currentSlide)
-
+    this.visualization.sequence.prev();
   },
 
   _next: function(e) {
     if (e) this.killEvent(e);
-
-    var currentSlide = this.options.slides.state();
-
-    if (currentSlide <= this.options.transitions.length - 1) {
-      currentSlide++;
-    } else {
-      currentSlide = 0;
-    }
-
-    this.options.slides.go(currentSlide);
-
+    this.visualization.sequence.next();
   },
 
   _renderDots: function() {
 
-    var currentActiveSlide = this.options.slides.state();
+    var currentActiveSlide = this.slides.state();
 
     for (var i = 0; i < this.options.transitions.length; i++) {
       var item = new cdb.geo.ui.SlidesControllerItem({ num: i, transition_options: this.options.transitions[i], active: i == currentActiveSlide });
@@ -26231,7 +26274,7 @@ cdb.geo.ui.SlidesController = cdb.core.View.extend({
 
   _renderCounter: function() {
 
-    var currentActiveSlide = this.options.slides.state();
+    var currentActiveSlide = this.slides.state();
     var currentTransition = this.options.transitions[currentActiveSlide];
 
     var $counter = this.$el.find(".counter");
@@ -26246,7 +26289,7 @@ cdb.geo.ui.SlidesController = cdb.core.View.extend({
   },
 
   _onSlideClick: function(slide) {
-    this.options.slides.go(slide.options.num);
+    this.visualization.sequence.current(slide.options.num);
   },
 
   render: function() {
@@ -26255,7 +26298,7 @@ cdb.geo.ui.SlidesController = cdb.core.View.extend({
 
     this.$el.html(this.template(options));
 
-    if (this.options.slides && this.options.transitions) {
+    if (this.slides && this.options.transitions) {
 
       if (options.show_counter) {
         this._renderCounter(); // we render: 1/N
@@ -26389,8 +26432,14 @@ cdb.geo.ui.Mobile = cdb.core.View.extend({
     _.defaults(this.options, this.default_options);
 
     this.hasLayerSelector = false;
+    this.layersLoading    = 0;
 
-    this.hasSlides = this.options.slides_data ? true : false;
+    this.slides_data   = this.options.slides_data;
+    this.visualization = this.options.visualization;
+
+    if (this.visualization) {
+      this.slides      = this.visualization.slides;
+    }
 
     this.mobileEnabled = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
@@ -26411,15 +26460,39 @@ cdb.geo.ui.Mobile = cdb.core.View.extend({
 
   },
 
+  loadingTiles: function() {
+    if (this.loader) {
+      this.loader.show()
+    }
+
+    if (this.layersLoading === 0) {
+      this.trigger('loading');
+    }
+    this.layersLoading++;
+  },
+
+  loadTiles: function() {
+    if (this.loader) {
+      this.loader.hide();
+    }
+    this.layersLoading--;
+    // check less than 0 because loading event sometimes is
+    // thrown before visualization creation
+    if(this.layersLoading <= 0) {
+      this.layersLoading = 0;
+      this.trigger('load');
+    }
+  },
+
   _selectOverlays: function() {
 
-    if (this.hasSlides && this.options.slides) { // if there are slides…
+    if (this.slides && this.slides_data) { // if there are slides…
 
-      var state = this.options.slides.state();
+      var state = this.slides.state();
 
       if (state == 0) this.overlays = this.options.overlays; // first slide == master vis
       else {
-        this.overlays = this.options.slides_data[state - 1].overlays;
+        this.overlays = this.slides_data[state - 1].overlays;
       }
     } else { // otherwise we load the regular overlays
       this.overlays = this.options.overlays;
@@ -26822,11 +26895,11 @@ cdb.geo.ui.Mobile = cdb.core.View.extend({
 
     var template = cdb.core.Template.compile('<div class="loader"></div>', 'mustache');
 
-    var loader = new cdb.geo.ui.TilesLoader({
+    this.loader = new cdb.geo.ui.TilesLoader({
       template: template
     });
 
-    this.$el.append(loader.render().$el);
+    this.$el.append(this.loader.render().$el);
     this.$el.addClass("with-loader");
 
   },
@@ -26888,7 +26961,7 @@ cdb.geo.ui.Mobile = cdb.core.View.extend({
         show_description = true;
       }
 
-      if (this.hasSlides) {
+      if (this.slides) {
         has_header = true;
       }
 
@@ -27015,14 +27088,15 @@ cdb.geo.ui.Mobile = cdb.core.View.extend({
 
   _renderSlidesController: function() {
 
-    if (this.hasSlides) {
+    if (this.slides) {
 
       this.$el.addClass("with-slides");
 
       this.slidesController = new cdb.geo.ui.SlidesController({
         show_counter: true,
         transitions: this.options.transitions,
-        slides: this.options.slides
+        visualization: this.options.visualization,
+        slides: this.slides
       });
 
       this.$el.append(this.slidesController.render().$el);
@@ -27558,7 +27632,7 @@ Map.prototype = {
   },
 
   getLayerCount: function() {
-    return this.layers.length;
+    return this.layers ? this.layers.length: 0;
   },
 
   _encodeBase64Native: function (input) {
@@ -28139,6 +28213,19 @@ Map.prototype = {
 
 NamedMap.prototype = _.extend({}, Map.prototype, {
 
+  getSubLayer: function(index) {
+    var layer = this.layers[index];
+    // for named maps we don't know how many layers are defined so 
+    // we create the layer on the fly
+    if (!layer) {
+      layer = this.layers[index] = {
+        options: {}
+      };
+    }
+    layer.sub = layer.sub || new SubLayer(this, index);
+    return layer.sub;
+  },
+
   setLayerDefinition: function(named_map, options) {
     options = options || {}
     this.endPoint = Map.BASE_URL + '/named/' + named_map.name;
@@ -28537,7 +28624,7 @@ function SubLayer(_parent, position) {
   this._position = position;
   this._added = true;
   this._bindInteraction();
-  if (Backbone.Model) {
+  if (Backbone.Model && this._parent.getLayer(this._position)) {
     this.infowindow = new Backbone.Model(this._parent.getLayer(this._position).infowindow);
     this.infowindow.bind('change', function() {
       var def = this._parent.getLayer(this._position);
@@ -29477,6 +29564,7 @@ L.CartoDBGroupLayerBase = L.TileLayer.extend({
 
       case 'click':
       case 'touchend':
+      case 'touchmove': // for some reason android browser does not send touchend
       case 'mspointerup':
       case 'pointerup':
       case 'pointermove':
@@ -30740,6 +30828,7 @@ CartoDBLayerGroupBase.prototype._manageOnEvents = function(map,o) {
 
     case 'click':
     case 'touchend':
+    case 'touchmove': // for some reason android browser does not send touchend
     case 'mspointerup':
       if (this.options.featureClick) {
         this.options.featureClick(o.e,latlng, point, o.data, o.layer);
@@ -31257,12 +31346,17 @@ if(typeof(google) != "undefined" && typeof(google.maps) != "undefined") {
       if (!layer_view) {
         return;
       }
+      return this._addLayerToMap(layer_view, opts);
+    },
+
+    _addLayerToMap: function(layer_view, opts) {
+      var layer = layer_view.model;
 
       this.layers[layer.cid] = layer_view;
 
       if (layer_view) {
         var idx = _(this.layers).filter(function(lyr) { return !!lyr.getTile; }).length - 1;
-        var isBaseLayer = _.keys(this.layers).length === 1 || (opts && opts.index === 0);
+        var isBaseLayer = _.keys(this.layers).length === 1 || (opts && opts.index === 0) || layer.get('order') === 0;
         // set base layer
         if(isBaseLayer && !opts.no_base_layer) {
           var m = layer_view.model;
@@ -31279,9 +31373,9 @@ if(typeof(google) != "undefined" && typeof(google.maps) != "undefined") {
             if (!layer_view.gmapsLayer) {
               cdb.log.error("gmaps layer can't be null");
             }
-            self.map_googlemaps.overlayMapTypes.setAt(idx, layer_view.gmapsLayer);
+            this.map_googlemaps.overlayMapTypes.setAt(idx, layer_view.gmapsLayer);
           } else {
-            layer_view.gmapsLayer.setMap(self.map_googlemaps);
+            layer_view.gmapsLayer.setMap(this.map_googlemaps);
           }
         }
         if(opts === undefined || !opts.silent) {
@@ -32668,20 +32762,22 @@ var Vis = cdb.core.View.extend({
     _.defer(loaded);
   },
 
-  addLegends: function(layers) {
-
+  _addLegends: function(legends) {
     if (this.legends) {
       this.legends.remove();
     }
 
     this.legends = new cdb.geo.ui.StackedLegend({
-      legends: this.createLegendView(layers)
+      legends: legends
     });
 
     if (!this.mobile_enabled) {
       this.mapView.addOverlay(this.legends);
     }
+  },
 
+  addLegends: function(layers) {
+    this._addLegends(this.createLegendView(layers));
   },
 
   _setLayerOptions: function(options) {
@@ -32740,7 +32836,7 @@ var Vis = cdb.core.View.extend({
 
   addTimeSlider: function(torqueLayer) {
     // if a timeslides already exists don't create it again
-    if (torqueLayer && !this.timeSlider) {
+    if (torqueLayer && (torqueLayer.options.steps > 1) && !this.timeSlider) {
       var self = this;
       // dont use add overlay since this overlay is managed by torque layer
       var timeSlider = Overlay.create('time_slider', this, { layer: torqueLayer });
@@ -33299,6 +33395,7 @@ var Vis = cdb.core.View.extend({
     var layer = data.layers[1];
 
     if (this.mobile_enabled) {
+
       if (options && options.legends === undefined) {
         options.legends = this.legends ? true : false;
       }
@@ -33311,7 +33408,7 @@ var Vis = cdb.core.View.extend({
 
       var transitions = [data.transition_options].concat(_.pluck(data.slides, "transition_options"));
 
-      this.addOverlay({
+      this.mobileOverlay = this.addOverlay({
         type: 'mobile',
         layers: layers,
         slides: data.slides,
@@ -33320,6 +33417,7 @@ var Vis = cdb.core.View.extend({
         options: options,
         torqueLayer: this.torqueLayer
       });
+
     }
 
   },
@@ -33348,21 +33446,28 @@ var Vis = cdb.core.View.extend({
       var cid = layers.at(i).cid;
       var layer = layers.at(i).attributes
       var layerView = this.mapView.getLayerByCid(cid);
-      if (layer.options && layer.options.layer_definition) {
-        var sublayers = layer.options.layer_definition.layers;
-        _(sublayers).each(function(sub, i) {
-          legends.push(self._createLegendView(sub, layerView.getSubLayer(i)));
-        });
-      } else if(layer.options && layer.options.named_map && layer.options.named_map.layers) {
-        var sublayers = layer.options.named_map.layers;
-        _(sublayers).each(function(sub, i) {
-          legends.push(self._createLegendView(sub, layerView.getSubLayer(i)));
-        });
-      } else {
-        legends.push(this._createLegendView(layer, layerView))
-      }
+      legends.push(this._createLayerLegendView(layer, layerView));
     }
-    return _.compact(legends);
+    return _.flatten(legends);
+  },
+
+  _createLayerLegendView: function(layer, layerView) {
+    var self = this;
+    var legends = [];
+    if (layer.options && layer.options.layer_definition) {
+      var sublayers = layer.options.layer_definition.layers;
+      _(sublayers).each(function(sub, i) {
+        legends.push(self._createLegendView(sub, layerView.getSubLayer(i)));
+      });
+    } else if(layer.options && layer.options.named_map && layer.options.named_map.layers) {
+      var sublayers = layer.options.named_map.layers;
+      _(sublayers).each(function(sub, i) {
+        legends.push(self._createLegendView(sub, layerView.getSubLayer(i)));
+      });
+    } else {
+      legends.push(this._createLegendView(layer, layerView))
+    }
+    return _.compact(legends).reverse();
   },
 
   addOverlay: function(overlay) {
@@ -33441,7 +33546,7 @@ var Vis = cdb.core.View.extend({
       this.gmaps_style = opt.gmaps_style;
     }
 
-    this.mobile         = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    this.mobile = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     this.mobile_enabled = (opt.mobile_layout && this.mobile) || opt.force_mobile;
 
     if (opt.force_mobile === false || opt.force_mobile === "false") this.mobile_enabled = false;
@@ -33460,6 +33565,10 @@ var Vis = cdb.core.View.extend({
 
     if (!opt.loaderControl) {
       remove_overlay('loader');
+    }
+
+    if (opt.searchControl !== undefined) {
+      opt.search = opt.searchControl;
     }
 
     if (!this.mobile_enabled && opt.search) {
@@ -33516,8 +33625,12 @@ var Vis = cdb.core.View.extend({
       remove_overlay('share');
     }
 
-    if (this.mobile) {
+    if (this.mobile || ((opt.zoomControl !== undefined) && (!opt.zoomControl)) ){
       remove_overlay('zoom');
+    }
+
+    if (this.mobile || ((opt.search !== undefined) && (!opt.search)) ){
+      remove_overlay('search');
     }
 
     // if bounds are present zoom and center will not taken into account
@@ -33772,6 +33885,11 @@ var Vis = cdb.core.View.extend({
 
 
   loadingTiles: function() {
+
+    if (this.mobileOverlay) {
+      this.mobileOverlay.loadingTiles();
+    }
+
     if (this.loader) {
       this.loader.show()
     }
@@ -33782,6 +33900,11 @@ var Vis = cdb.core.View.extend({
   },
 
   loadTiles: function() {
+
+    if (this.mobileOverlay) {
+      this.mobileOverlay.loadTiles();
+    }
+
     if (this.loader) {
       this.loader.hide();
     }
@@ -34012,6 +34135,436 @@ cdb.vis.Vis = Vis;
 })();
 (function() {
 
+  function Queue() {
+
+    // callback storage
+    this._methods = [];
+
+    // reference to the response
+    this._response = null;
+
+    // all queues start off unflushed
+    this._flushed = false;
+
+  };
+
+  Queue.prototype = {
+
+    // adds callbacks to the queue
+    add: function(fn) {
+
+      // if the queue had been flushed, return immediately
+      if (this._flushed) {
+
+        // otherwise push it on the queue
+        fn(this._response);
+
+      } else {
+        this._methods.push(fn);
+      }
+
+    },
+
+    flush: function(resp) {
+
+      // flush only ever happens once
+      if (this._flushed) {
+        return;
+      }
+
+      // store the response for subsequent calls after flush()
+      this._response = resp;
+
+      // mark that it's been flushed
+      this._flushed = true;
+
+      // shift 'em out and call 'em back
+      while (this._methods[0]) {
+        this._methods.shift()(resp);
+      }
+
+    }
+
+  };
+
+  ImageModel = cdb.core.Model.extend({
+    defaults: {
+      format: "png",
+      zoom: 10,
+      center: [0, 0],
+      size:  [320, 240],
+      tiler_port: 80,
+      tiler_domain: "cartodb.com"
+    }
+  });
+
+  var Image = function() {
+
+    Map.call(this, this); 
+
+    this.model = new ImageModel();
+    this.error = null;
+
+    this.supported_formats = ["png", "jpg"];
+
+    this.defaults = {
+      tiler_domain: "cartodb.com",
+      tiler_port: "80"
+    };
+
+    this.available_basemaps = ["light_all", "light_nolabels", "dark_all", "dark_nolabels"];
+
+  };
+
+  Image.prototype = _.extend({}, Map.prototype, {
+
+    load: function(vizjson, options) {
+
+      _.bindAll(this, "_onVisLoaded");
+
+      this.queue = new Queue;
+
+      options = _.defaults(options, { vizjson: vizjson, temp_id: "s" + this._getUUID() }, this.model.defaults);
+
+      this.model.set(options);
+
+      cdb.vis.Loader.get(vizjson, this._onVisLoaded);
+
+      return this;
+
+    },
+
+    loadLayerDefinition: function(layerDefinition) {
+
+      var self = this;
+
+      this.queue = new Queue;
+
+      if (!layerDefinition.user_name) {
+        cartodb.log.error("Please, specify the username");
+        return;
+      }
+
+      this.options.user_name      = layerDefinition.user_name;
+      this.options.tiler_protocol = layerDefinition.tiler_protocol;
+      this.options.tiler_domain   = layerDefinition.tiler_domain;
+      this.options.tiler_port     = layerDefinition.tiler_port;
+      this.endPoint = "/api/v1/map";
+
+      this.options.layers = layerDefinition;
+
+      this._requestLayerGroupID();
+
+    },
+
+    _onVisLoaded: function(data) {
+
+      if (data) {
+
+        var layerDefinition;
+        var baseLayer = data.layers[0];
+        var dataLayer = data.layers[1];
+
+        this._chooseBasemap(baseLayer.options);
+
+        this.options.user_name      = dataLayer.options.user_name;
+
+        this._setupTilerConfiguration(dataLayer.options.tiler_protocol, dataLayer.options.tiler_domain, dataLayer.options.tiler_port);
+
+        this.endPoint = "/api/v1/map";
+
+        var bbox = [];
+
+        bbox.push([data.bounds[0][1], data.bounds[0][0]]);
+        bbox.push([data.bounds[1][1], data.bounds[1][0]]);
+
+        this.model.set({
+          zoom: data.zoom,
+          center: JSON.parse(data.center),
+          bbox: bbox,
+          bounds: data.bounds
+        });
+
+        if (dataLayer.type === "namedmap") {
+          this.options.layers = this._getNamedmapLayerDefinition(dataLayer.options);
+        } else {
+          this.options.layers = this._getLayergroupLayerDefinition(dataLayer.options);
+        }
+
+        this._requestLayerGroupID();
+
+      }
+
+    },
+
+    _setupTilerConfiguration: function(protocol, domain, port) {
+
+      var vizjson = this.model.get("vizjson");
+
+      var isHTTPS = vizjson.indexOf("https") !== -1 ? true : false;
+
+      this.options.tiler_domain   = domain;
+
+      if (isHTTPS) {
+        this.options.tiler_protocol = "https";
+        this.options.tiler_port     = 443;
+      } else {
+        this.options.tiler_protocol = protocol;
+        this.options.tiler_port     = port;
+      }
+
+    },
+
+    toJSON: function(){
+      return this.options.layers;
+    },
+
+    _requestLayerGroupID: function() {
+
+      var self = this;
+
+      this._requestPOST({}, function(data, error) {
+
+        if (error) {
+          self.error = error;
+        }
+
+        if (data) {
+          self.model.set("layergroupid", data.layergroupid);
+        }
+
+        self.queue.flush(this);
+
+      });
+
+    },
+
+    _getBasemapLayer: function() {
+
+      return {
+        type: "http",
+        options: {
+          urlTemplate: "http://{s}.basemaps.cartocdn.com/" + this.model.get("basemap") + "/{z}/{x}/{y}.png",
+          subdomains: [ "a", "b", "c" ]
+        }
+      };
+
+    },
+
+    _getLayergroupLayerDefinition: function(options) {
+
+      var layerDefinition = new LayerDefinition(options.layer_definition, options);
+
+      var ld = layerDefinition.toJSON();
+
+      // TODO: remove this
+      for (var i = 0; i<ld.layers.length; i++) {
+        delete ld.layers[i].options.interactivity
+      }
+
+      ld.layers.unshift(this._getBasemapLayer());
+
+      return ld;
+
+    },
+
+    _getNamedmapLayerDefinition: function(options) {
+
+      var layerDefinition = new NamedMap(options.named_map, options);
+
+      layerDefinition.options.type = "named";
+
+      var layers  =  [
+        this._getBasemapLayer(), {
+        type: "named",
+        options: {
+          name: layerDefinition.named_map.name
+        }
+      }];
+
+      var ld = {
+        layers: layers
+      };
+
+      return ld;
+
+    },
+
+    _getUrl: function() {
+
+      var username     = this.options.user_name;
+      var zoom         = this.model.get("zoom");
+      var bbox         = this.model.get("bbox");
+      var lat          = this.model.get("center")[0];
+      var lon          = this.model.get("center")[1];
+      var width        = this.model.get("size")[0];
+      var height       = this.model.get("size")[1];
+      var layergroupid = this.model.get("layergroupid");
+      var format       = this.model.get("format");
+
+      var url = this._tilerHost() + this.endPoint;
+
+      if (bbox) {
+        return [url, "static/bbox" , layergroupid, bbox.join(","), width, height + "." + format].join("/");
+      } else {
+        return [url, "static/center" , layergroupid, zoom, lat, lon, width, height + "." + format].join("/");
+      }
+
+    },
+
+    _chooseBasemap: function(basemap_layer) { 
+
+      if (this.model.get("basemap")) return;
+
+      var type = basemap_layer.base_type;
+
+      if (!_.include(this.available_basemaps, type)) {
+
+        if (type && type.indexOf("toner") !== -1)      basemap = "dark_all";
+        else if (type && type.indexOf("dark")  !== -1) basemap = "dark_all";
+        else if (type && type.indexOf("night") !== -1) basemap = "dark_all";
+        else if (type && type.indexOf("blue") !== -1) basemap = "dark_all";
+        else if (type && type.indexOf("light") !== -1) basemap = "light_all";
+        else basemap = "light_all";
+
+        this.model.set("basemap", basemap);
+
+      }
+
+    },
+
+    // Generates a random string
+    _getUUID: function() {
+      var S4 = function() {
+        return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
+      };
+      return (S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4()+S4()+S4());
+    },
+
+    /* Setters */
+    _set: function(name, value) {
+
+      var self = this;
+
+      this.queue.add(function() {
+        self.model.set(name,value);
+      });
+
+      return this;
+
+    },
+
+    zoom: function(zoom) {
+      return this._set("zoom", zoom);
+    },
+
+    bbox: function(bbox) {
+      return this._set("bbox", bbox);
+    },
+
+    center: function(center) {
+      this._set("bbox", null);
+      return this._set("center", center);
+    },
+
+    format: function(format) {
+      return this._set("format", _.include(this.supported_formats, format) ? format : this.model.defaults.format);
+    },
+
+    size: function(width, height) {
+      return this._set("size", [width, height === undefined ? width : height]);
+    },
+
+    /* Methods */
+
+    /* Image.into(HTMLImageElement)
+       inserts the image in the HTMLImageElement specified */
+    into: function(img) {
+
+      var self = this;
+
+      if (!(img instanceof HTMLImageElement)) {
+        cartodb.log.error("img should be an image");
+        return;
+      }
+
+      this.model.set("size", [img.width, img.height]);
+
+      this.queue.add(function(response) {
+        img.src = self._getUrl();
+      });
+
+    },
+
+    /* Image.getUrl(callback(err, url))
+       gets the url for the image, err is null is there was no error */
+
+    getUrl: function(callback) {
+
+      var self = this;
+
+      this.queue.add(function() {
+        if (callback) {
+          callback(self.error, self._getUrl()); // TODO: return the error
+        }
+      });
+
+    },
+
+    /* Image.write(attributes)
+       adds a img tag in the same place script is executed */
+      // TODO: document class, id and src attributes
+
+    write: function(attributes) {
+
+      var self = this;
+
+      this.model.set("attributes", attributes);
+
+      if (attributes && attributes.src) {
+        document.write('<img id="' + this.model.get("temp_id") + '" src="'  + attributes.src + '" />');
+      } else {
+        document.write('<img id="' + this.model.get("temp_id") + '" />');
+      }
+
+      this.queue.add(function() {
+
+        var element = document.getElementById(self.model.get("temp_id"));
+
+        element.src = self._getUrl();
+        element.removeAttribute("temp_id");
+
+        var attributes = self.model.get("attributes");
+
+        if (attributes && attributes.class) { element.setAttribute("class", attributes.class); }
+        if (attributes && attributes.id)    { element.setAttribute("id", attributes.id); }
+
+      });
+
+      return this;
+    }
+
+  })
+
+  cdb.Image = function(data, options) {
+
+    if (!options) options = {};
+
+    var image = new Image();
+
+    if (typeof data === 'string') {
+      image.load(data, options);
+    } else {
+      image.loadLayerDefinition(data);
+    }
+
+    return image;
+
+  };
+
+})();
+(function() {
+
 cdb.vis.Overlay.register('logo', function(data, vis) {
 
 });
@@ -34020,7 +34573,7 @@ cdb.vis.Overlay.register('slides_controller', function(data, vis) {
 
   var slides_controller = new cdb.geo.ui.SlidesController({
     transitions: data.transitions,
-    slides: vis.slides
+    visualization: vis
   });
 
   return slides_controller.render();
@@ -34055,9 +34608,9 @@ cdb.vis.Overlay.register('mobile', function(data, vis) {
     template: template,
     mapView: vis.mapView,
     overlays: data.overlays,
-    slides: vis.slides,
     transitions: data.transitions,
     slides_data: data.slides,
+    visualization: vis,
     layerView: data.layerView,
     visibility_options: data.options,
     torqueLayer: data.torqueLayer,
@@ -34764,16 +35317,19 @@ Layers.register('torque', function(vis, data) {
           promise.trigger('error', "layer not supported");
           return promise;
         }
+
         if(options.infowindow) {
           viz.addInfowindow(layerView);
         }
+
         if(options.tooltip) {
           viz.addTooltip(layerView);
         }
+
         if(options.legends) {
           var layerModel = cdb.vis.Layers.create(layerData.type || layerData.kind, viz, layerData);
 
-          viz.addLegends(new cdb.geo.Layers([layerModel]), ((mobileEnabled && options.mobile_layout) || options.force_mobile));
+          viz._addLegends(viz._createLayerLegendView(layerModel.attributes,  layerView))
         }
 
         if(options.time_slider && layerView.model.get('type') === 'torque') {

@@ -1164,12 +1164,6 @@ div.cartodb-popup.v2.header.yellow a.cartodb-popup-close-button:after {
   }/**
  *  CartoDB map style components
  */
-* {
-  -webkit-margin-after:0;
-  -webkit-margin-before:0;
-  -webkit-padding-start:0;
-  -webkit-padding-end:0;
-}
 @-webkit-keyframes loading {
   to { opacity: 1; }
 }
@@ -4430,6 +4424,7 @@ div.cartodb-timeslider .ui-slider-vertical .ui-slider-range-max {
 
   div.cartodb-tooltip-content h4 {
     display:block;
+    margin: 0 0 1px 0;
     text-transform: uppercase;
     font:normal 10px "Helvetica Neue","Helvetica",Arial;
     color:#AAA;
@@ -4438,7 +4433,7 @@ div.cartodb-timeslider .ui-slider-vertical .ui-slider-range-max {
 
   div.cartodb-tooltip-content p {
     display:block;
-    margin:0;
+    margin: 0 0 4px 0;
     padding:0 0 7px;
     font:normal 12px "Helvetica Neue", "Helvetica", Arial;
     color:#333333;
@@ -4447,6 +4442,7 @@ div.cartodb-timeslider .ui-slider-vertical .ui-slider-range-max {
 
   div.cartodb-tooltip-content p:last-child {
     padding:0;
+    margin: 0;
   }
 
   div.cartodb-tooltip-content a {
@@ -4464,7 +4460,7 @@ div.cartodb-timeslider .ui-slider-vertical .ui-slider-range-max {
   }
 
   /**
-   *  CartoDB ooltip light styles
+   *  CartoDB tooltip light styles
    */
 
   
