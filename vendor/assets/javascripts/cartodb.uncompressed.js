@@ -1,6 +1,6 @@
 // cartodb.js version: 3.12.7
 // uncompressed version: cartodb.uncompressed.js
-// sha: 164fafbbe3281750d38db992531bae0ed44ab204
+// sha: 4e750a12b078dc02c11ff773eabb64c5662a3e77
 (function() {
   var root = this;
 
@@ -34238,7 +34238,10 @@ cdb.vis.Vis = Vis;
         var baseLayer = data.layers[0];
         var dataLayer = data.layers[1];
 
-        this.options.user_name = dataLayer.options.user_name;
+        if (dataLayer.options) {
+          this.options.user_name = dataLayer.options.user_name;
+          this.cdn_url = dataLayer.options.cdn_url;
+        }
 
         this._setupTilerConfiguration(dataLayer.options.tiler_protocol, dataLayer.options.tiler_domain, dataLayer.options.tiler_port);
 
