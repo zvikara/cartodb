@@ -14,10 +14,11 @@ $corner_radius: 6px;
 
 .table_panel {
   position:fixed;
-  right:-537px;
+  right:30px !important;
+
   top:64px;
   bottom:0px;
-  width:600px;
+  width: 400px;
   padding-top:25px;
   background:white;
   letter-spacing:-4px;
