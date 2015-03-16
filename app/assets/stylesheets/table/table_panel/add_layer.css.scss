@@ -50,11 +50,11 @@
       letter-spacing:0;
     }
 
-    &:hover {
-      height:70px;
-      cursor:pointer;
+    //&:hover {
+      //height:70px;
+      //cursor:pointer;
 
-      .add { @include background(sprite($table-sprites, add_layer, $offset-x:0, $offset-y:-16px) no-repeat); }
-      .action { color: #3A77A6; }
-    }
+      //.add { @include background(sprite($table-sprites, add_layer, $offset-x:0, $offset-y:-16px) no-repeat); }
+      //.action { color: #3A77A6; }
+    //}
   }
