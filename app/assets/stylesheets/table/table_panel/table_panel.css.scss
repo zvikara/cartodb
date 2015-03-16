@@ -30,12 +30,14 @@ $corner_radius: 6px;
   z-index:20;
 }
 .map_elements_tabs {
+  padding: 10px 0;
   a {
     letter-spacing: 0;
     display: inline-block;
     margin-left: 30px;
   }
 }
+
 
 .table_panel {
   width: 100%;
@@ -69,8 +71,6 @@ $corner_radius: 6px;
     //&:first-child {margin-top:0;}
     //&:last-child:hover {margin-top:-38px}
   }
-
-
 
 
 
