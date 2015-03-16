@@ -23,10 +23,10 @@
 
     div.left {
       position:relative;
-      width:65%;
+      width:50%;
       height:auto;
-      margin-left:17px;
       z-index: 10;
+      margin-left: 15px;
 
       // Back button
       a.back {
@@ -91,21 +91,12 @@
       h2 {
         width:auto;
         height:auto;
-        margin:0 0 0 10px;
         padding:0;
         font:500 20px $title-fonts2;
         color:white;
         text-shadow:0 1px $text-shadow-color;
         letter-spacing:0;
         line-height:normal;
-
-        &:before {
-          content:'|';
-          margin-right:10px;
-          font-weight:300!important;
-          text-shadow:none;
-          color: rgba(white, 0.25);
-        }
       }
 
       // Clear view button type
@@ -131,7 +122,7 @@
           padding-left:15px;
 
           &.public { margin-left:116px }
-          
+
           em { font-style: italic; }
 
           .link { text-decoration: underline; }
@@ -154,7 +145,7 @@
       @include align-items(center, center);
       height:28px;
       margin:0;
-      
+
       li { margin:0; }
 
       .privacy {
@@ -192,11 +183,8 @@
 
     // Options menu
     ul.options {
-      position:absolute;
-      top:0;
-      right: 0;
       width:auto;
-      margin:5px 35px 0 0;
+      margin: 3px 15px 0 0;
 
       li {
         position:relative;
@@ -213,11 +201,12 @@
           border: 2px solid #fff;
           background:none;
 
-          span { 
+          span {
             padding: 1px 0;
             @include inline-block();
-            color: #fff; 
+            color: #fff;
             font-size: 12px;
+            letter-spacing: normal;
           }
 
           &:hover {
