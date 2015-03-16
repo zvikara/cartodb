@@ -16,8 +16,6 @@
   <body>
     <% if ( ( controller_name != "visualizations" && controller_name != "tables" )  || action_name != "show" ) %>
       <%= render 'admin/shared/header' %>
-    <% else %>
-      <%= render 'admin/shared/vis_header' %>
     <% end %>
     <%= yield %>
     <% if ( ( controller_name != "visualizations" && controller_name != "tables" ) || action_name != "show" ) %>

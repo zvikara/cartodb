@@ -14,11 +14,6 @@
   }
 
 div.panes {
-  position:absolute;
-  top:78px;
-  right:0;
-  bottom:0;
-  left:0;
 
   // When table/layer is synced
   &.synced {top:102px}
@@ -491,7 +486,7 @@ div.table {
     &.vis {
       div.shadow {
         top:144px;
-      } 
+      }
     }
 
     // tbody
@@ -714,7 +709,7 @@ div.order_selector {
 
 
 // Hello hacks for Firefox
-@-moz-document url-prefix() { 
+@-moz-document url-prefix() {
   table { border-collapse: inherit; }
   thead div.sqlview { z-index:1!important; }
   thead tr th div { z-index:2!important; }
