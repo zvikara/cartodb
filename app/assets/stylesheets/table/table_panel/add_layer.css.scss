@@ -15,7 +15,6 @@
   .add_layer {
     position:relative;
     height:45px;
-    margin-top:-15px;
     line-height:35px;
     @include transform-style("linear");
     @include transition-property("height");
