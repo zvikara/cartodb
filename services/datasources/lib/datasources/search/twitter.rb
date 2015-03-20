@@ -183,7 +183,8 @@ module CartoDB
 
         # Hide sensitive fields
         def to_s
-          "<CartoDB::Datasources::Search::Twitter @user=#{@user} @filters=#{@filters} @search_api_config=#{@search_api_config}>"
+          "<CartoDB::Datasources::Search::Twitter @user=#{@user} @filters=#{@filters} " <<
+            "@search_api_config=#{@search_api_config.except(:password, :search_url)}>"
         end
 
         # If this datasource accepts a data import instance
@@ -403,6 +404,12 @@ module CartoDB
           raise NoResultsError.new if exception.nil? && total_results == 0
 
           # If fails on the first request, do not fail silently
+          check_error_scenarios(exception, total_results)
+
+          total_results
+        end
+
+        def check_error_scenarios(exception, total_results)
           if !exception.nil? && total_results == 0
             log("ERROR: 0 results & exception: #{exception} (HTTP #{exception.http_code}) #{exception.additional_data}")
             # @see http://support.gnip.com/apis/search_api/api_reference.html
@@ -423,8 +430,6 @@ module CartoDB
             end
             raise DatasourceBaseError.new(exception.to_s, DATASOURCE_NAME)
           end
-
-          total_results
         end
 
         def build_date_from_fields(fields, date_type)
@@ -518,21 +523,14 @@ module CartoDB
         def build_maxresults_field(user)
           if twitter_credit_limits > 0
             [remaining_quota, TwitterSearch::SearchAPI::MAX_PAGE_RESULTS].min
-          else
             # user about to hit quota?
-            if remaining_quota < TwitterSearch::SearchAPI::MAX_PAGE_RESULTS
-              if user.soft_twitter_datasource_limit
-                # But can go beyond limits
-                TwitterSearch::SearchAPI::MAX_PAGE_RESULTS
-              else
-                remaining_quota
-              end
-            else
-              TwitterSearch::SearchAPI::MAX_PAGE_RESULTS
-            end
+          elsif remaining_quota < TwitterSearch::SearchAPI::MAX_PAGE_RESULTS
+            # Can go beyond limits?
+            user.soft_twitter_datasource_limit ? TwitterSearch::SearchAPI::MAX_PAGE_RESULTS : remaining_quota
+          else
+            TwitterSearch::SearchAPI::MAX_PAGE_RESULTS
           end
         end
-
 
         # Max total results
         # @param user User
