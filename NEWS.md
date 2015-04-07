@@ -6,6 +6,7 @@
 * Fixed Google+ disconnection in new dashboard [#2378](https://github.com/CartoDB/cartodb/issues/2378)
 * Added script to purge redis vizjson cache [#2968](https://github.com/CartoDB/cartodb/pull/2968)
 * Allows to generate a static map of a password protected visualization [#3028] (https://github.com/CartoDB/cartodb/pull/3028)
+* Allows to set your highlight map [#2988](https://github.com/CartoDB/cartodb/issues/2988)
 
 Bugfixes:
 * Removes duplicated maps in the delete warning dialog [3055](https://github.com/CartoDB/cartodb/pull/3055)
