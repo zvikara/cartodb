@@ -62,6 +62,11 @@ module Carto
           end
         end
 
+        pattern = params[:q]
+        if pattern.present?
+          vqb.with_partial_match(pattern)
+        end
+
         # TODO: undesirable table hardcoding, needed for disambiguation. Look for
         # a better approach and/or move it to the query builder
         response = {
