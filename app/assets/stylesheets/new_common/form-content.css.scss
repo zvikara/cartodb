@@ -239,11 +239,18 @@
     color: $cTypography-linkHover;
   }
 }
+.Form-previewMap {
+  width: 100%;
+  height: 136px;
+  border: 1px solid #CCC;
+  border-radius: 4px;
+}
 .Form-link {
   color: $cTypography-link;
-  text-decoration: underline;
+  text-decoration: none;
   &:hover {
     color: $cTypography-linkHover;
+    text-decoration: underline;
     cursor: pointer;
   }
 }
