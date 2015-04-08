@@ -37,11 +37,14 @@ describe Api::Json::VisualizationsController do
     CartoDB::Visualization.repository = DataRepository::Backend::Sequel.new(@db, :visualizations)
     CartoDB::Overlay.repository       = DataRepository::Backend::Sequel.new(@db, :overlays)
 
+    CartoDB::NamedMapsWrapper::NamedMaps.any_instance.stubs(:create).returns(SecureRandom.uuid)
+
     begin
+      # Avoid the CartoDB::NamedMapsWrapper::HTTPResponseError when deleting user data
+      CartoDB::NamedMapsWrapper::NamedMaps.any_instance.stubs(:get).returns(nil)
       delete_user_data @user
-    rescue => exception
-      # Silence named maps problems only here upon data cleaning, not in specs
-      raise unless exception.class.to_s == 'CartoDB::NamedMapsWrapper::HTTPResponseError'
+    ensure
+      CartoDB::NamedMapsWrapper::NamedMaps.any_instance.unstub(:get)
     end
 
     @headers = { 
@@ -56,7 +59,6 @@ describe Api::Json::VisualizationsController do
 
   describe 'POST /api/v1/viz' do
     it 'creates a visualization' do
-      pending
       payload = factory.merge(type: 'table')
 
       post "/api/v1/viz?api_key=#{@api_key}",
@@ -81,12 +83,13 @@ describe Api::Json::VisualizationsController do
       response.fetch('tags')        .should_not == payload.fetch(:tags).to_json
       response.keys.should_not include 'related'
 
-      payload = { kind: 'carto', order: 1 }
-      post "/api/v1/maps/#{map_id}/layers?api_key=#{@api_key}",
-        payload.to_json, @headers
+      table = table_factory
+
+      payload = { kind: 'carto', order: 1, options: {table_name: table.fetch('name'), user_name: @user.username} }
+      post "/api/v1/maps/#{map_id}/layers?api_key=#{@api_key}", payload.to_json, @headers
       last_response.status.should == 200
 
-      payload = { kind: 'carto', order: 2 }
+      payload = { kind: 'carto', order: 2, options: {table_name: table.fetch('name'), user_name: @user.username} }
       post "/api/v1/maps/#{map_id}/layers?api_key=#{@api_key}",
         payload.to_json, @headers
       last_response.status.should == 400
@@ -300,9 +303,11 @@ describe Api::Json::VisualizationsController do
     end
 
     it 'returns filtered results' do
-      pending
+      # Avoid the CartoDB::NamedMapsWrapper::HTTPResponseError when deleting user data
+      CartoDB::NamedMapsWrapper::NamedMaps.any_instance.stubs(:get).returns(nil)
       post "/api/v1/viz?api_key=#{@api_key}",
         factory.to_json, @headers
+      last_response.status.should == 200
 
       get "/api/v1/viz?api_key=#{@api_key}&type=table",
         {}, @headers
@@ -313,8 +318,11 @@ describe Api::Json::VisualizationsController do
 
       post "/api/v1/viz?api_key=#{@api_key}",
         factory.to_json, @headers
+      last_response.status.should == 200
       post "/api/v1/viz?api_key=#{@api_key}",
         factory.merge(type: 'table').to_json, @headers
+      last_response.status.should == 200
+
       get "/api/v1/viz?api_key=#{@api_key}&type=derived",
         {}, @headers
 
