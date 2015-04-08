@@ -2309,16 +2309,7 @@ div.cartodb-legend.color ul li .bullet {
   margin: 0 5px 0 0;
   width: 3px;
   height: 3px;
-
-  -webkit-border-radius: 50%;
-  -moz-border-radius: 50%;
-  -ms-border-radius: 50%;
-  -o-border-radius: 50%;
-  border-radius: 50%;
-
   padding: 2px;
-  border: 1px solid rgba(0, 0, 0, .2);
-  z-index: 1000;
 }
 
 /* Bubble legend */
