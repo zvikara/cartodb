@@ -229,6 +229,7 @@ class User < Sequel::Model
       self.layers.each { |l| remove_layer l }
       self.geocodings.each { |g| g.destroy }
       self.assets.each { |a| a.destroy }
+      self.delete_derived_vizs!
       CartoDB::Synchronization::Collection.new.fetch(user_id: self.id).destroy
     rescue StandardError => exception
       error_happened = true
@@ -2316,6 +2317,15 @@ TRIGGER
   def purge_redis_vizjson_cache
     redis_keys = CartoDB::Visualization::Collection.new.fetch(user_id: self.id).map(&:redis_vizjson_key)
     CartoDB::Visualization::Member.redis_cache.del redis_keys unless redis_keys.empty?
+  end
+
+  def delete_derived_vizs!
+    CartoDB::Visualization::Collection.new.fetch(
+                                                 user_id: self.id,
+                                                 type: CartoDB::Visualization::Member::TYPE_DERIVED
+                                                 ).each do |viz|
+      viz.delete
+    end
   end
 
   private

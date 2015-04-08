@@ -108,6 +108,7 @@ module CartoDB
       user.assets_dataset.destroy
       user.data_imports_dataset.destroy
       user.geocodings_dataset.destroy
+      user.delete_derived_vizs!
     end
 
     def load_user_functions(user)
