@@ -72,4 +72,8 @@ CartoDB::Application.configure do
     Cartodb.asset_path
   end
 
+  config.action_mailer.asset_host = Proc.new do
+    Cartodb.asset_path
+  end
+
 end

@@ -35,6 +35,7 @@ CartoDB::Application.configure do
 
   # Enable serving of images, stylesheets, and javascripts from an asset server
   # config.action_controller.asset_host = "http://assets.example.com"
+  config.action_mailer.asset_host = 'http://localhost:3000'
 
   # Disable delivery errors, bad email addresses will be ignored
   # config.action_mailer.raise_delivery_errors = false
@@ -67,4 +68,9 @@ CartoDB::Application.configure do
   config.action_controller.asset_host = Proc.new do
     Cartodb.asset_path
   end
+
+  config.action_mailer.asset_host = Proc.new do
+    Cartodb.asset_path
+  end
+
 end
