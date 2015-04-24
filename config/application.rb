@@ -63,6 +63,7 @@ module CartoDB
       app.js
       application.js
       cdb.js
+      embed.js
       common_data.js
       new_dashboard_deps.js
       new_dashboard.js
