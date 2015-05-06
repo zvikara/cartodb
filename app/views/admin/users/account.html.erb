@@ -3,6 +3,7 @@
 <% end %>
 <%= content_for(:js) do %>
   <script type="text/javascript">
+    var A = <%= @user[:google_maps_key].nil? %>;
     var username = "<%= @user.username %>";
     var config = <%= safe_js_object frontend_config %>;
     var authenticity_token = "<%= form_authenticity_token %>";
