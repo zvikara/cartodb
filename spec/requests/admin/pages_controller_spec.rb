@@ -135,6 +135,69 @@ describe Admin::PagesController do
       uri.path.should == '/user/anyuser/dashboard'
     end
 
+    it 'renders public maps home if it is NOT an org user AND the user is NOT logged in' do
+      prepare_user(@non_org_user_name)
+
+      get "/u/#{@non_org_user_name}", {}, JSON_HEADER
+
+      last_response.status.should == 404
+    end
+
+    it 'renders public maps home if it is NOT an org user AND the user is logged in' do
+    end
+
+    it 'renders public maps home if it is an org user AND the user is NOT logged in' do
+    end
+
+    it 'renders public maps home if it is an org user AND the user is logged in' do
+    end
+
+    it 'renders public datasets home if it is NOT an org user AND the user is NOT logged in' do
+    end
+
+    it 'renders public datasets home if it is NOT an org user AND the user is logged in' do
+    end
+
+    it 'renders public datasets home if it is an org user AND the user is NOT logged in' do
+    end
+
+    it 'renders public datasets home if it is an org user AND the user is logged in' do
+    end
+
+    it 'responds with no maps title if the user has no maps nor datasets in public maps home' do
+    end
+
+    it 'responds with map title if the user has map in public maps home' do
+    end
+
+    it 'responds with maps title if the user has maps in public maps home' do
+    end
+
+    it 'responds with dataset title if the user has dataset in public maps home' do
+    end
+
+    it 'responds with datasets title if the user has datasets in public maps home' do
+    end
+
+    it 'responds with map and dataset title if the user has map and dataset in public maps home' do
+    end
+
+    it 'responds with no dataset title if the user has no dataset in public datasets home' do
+    end
+
+    it 'responds with dataset title if the user has dataset in public datasets home' do
+    end
+
+    it 'responds with datasets title if the user has dataset sin public datasets home' do
+    end
+
+    it 'returns a 404 if table is private' do
+      id = table_factory.table_visualization.id
+
+      get "/viz/#{id}/public", {}, @headers
+      last_response.status.should == 404
+      last_response.body.should =~ %r{<title>CartoDB - 404 Error</title>}
+    end
   end
 
   def prepare_user(user_name, org_user=false, belongs_to_org=false)
