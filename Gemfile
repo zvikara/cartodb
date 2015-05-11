@@ -3,7 +3,7 @@ source 'http://rubygems.org'
 gem 'rails',                   '3.2.2'
 
 gem 'rake',                    '0.9.2.2'
-gem 'pg',                      '0.13.2'
+gem 'pg',                      '0.15.0'
 gem 'sequel',                  '3.42.0'
 gem 'sequel_pg',               '1.6.3', require: 'sequel'
 
@@ -35,7 +35,7 @@ gem 'therubyracer',            '0.12.1' # Required by ejs
 
 group :production, :staging do
   gem 'unicorn',               '4.8.2'
-  gem 'raindrops',             '0.12.0'
+  gem 'raindrops',             '0.13.0'
 end
 
 group :assets do
@@ -56,7 +56,7 @@ gem 'instagram',               '1.1.3'
 gem 'gibbon',                  '1.1.4'
 
 # Geocoder (synchronizer doesn't needs it anymore)
-gem 'eventmachine',            '1.0.3'
+gem 'eventmachine',            '1.0.4'
 gem 'em-pg-client',            '0.2.1'
 
 # Service components (/services)
@@ -93,8 +93,10 @@ group :test do
 end
 
 group :development, :test do
+  gem 'test-unit'
   gem 'rb-readline'
-  gem 'debugger',              '1.6.8'
+  gem 'byebug'
+  #gem 'debugger',              '1.6.8'
   gem 'rack',                  '1.4.1'
 
   # Server
