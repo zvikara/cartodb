@@ -14,6 +14,7 @@ require_relative './url_translator/google_docs'
 require_relative './url_translator/kimono_labs'
 require_relative './unp'
 require_relative '../../../../lib/carto/http/client'
+require_relative 'scraping_importer'
 
 module CartoDB
   module Importer2
@@ -211,6 +212,8 @@ module CartoDB
             raise DownloadError.new("DOWNLOAD ERROR: Code:#{error_response.code} Body:#{error_response.body}")
           end
         end
+
+        name = CartoDB::Importer2::ScrapingImporter.new(temp_name, @translated_url, repository).extract if CartoDB::Importer2::ScrapingImporter.is_scraping_request?(@translated_url)
 
         File.rename(temp_name, filepath(name))
 
