@@ -95,7 +95,7 @@ end
 group :development, :test do
   gem 'rb-readline',           '0.5.3'
   gem 'debugger',              '1.6.8'
-  gem 'rack',                  '1.6.4'
+  gem 'rack',                  '1.4.7'
 
   # Server
   gem 'thin', require: false
